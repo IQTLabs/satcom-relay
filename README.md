@@ -4,7 +4,7 @@ A SATCOM platform for relaying messages in remote locations
 
 ## About
 
-### Environment Setup
+## Environment Setup
 
 ### Board
 - Adafruit Feather M0 Basic
