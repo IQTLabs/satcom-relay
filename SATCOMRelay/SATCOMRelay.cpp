@@ -14,7 +14,7 @@ void SERCOM1_Handler()
 }
 
 SATCOMRelay::SATCOMRelay() {
-  
+  pinMode(GPS_EN_PIN, OUTPUT);
 }
 
 int SATCOMRelay::initGPS() {
@@ -42,7 +42,8 @@ boolean SATCOMRelay::readGPSSerial() {
     // a tricky thing here is if we print the NMEA sentence, or data
     // we end up not listening and catching other sentences!
     // so be very wary if using OUTPUT_ALLDATA and trying to print out data
-    #if DEBUG_MODE
+    #if GPS_NMEA_MESSAGES
+    Serial.print("GPS_NMEA_MESSAGES: ");
     Serial.print(GPS.lastNMEA()); // this also sets the newNMEAreceived() flag to false
     #endif
     if (GPS.parse(GPS.lastNMEA())) // this also sets the newNMEAreceived() flag to false
@@ -52,31 +53,36 @@ boolean SATCOMRelay::readGPSSerial() {
 }
 
 boolean SATCOMRelay::gpsFix() {
-  return GPS.fix;
+  // return GPS.fix; this variable seems to be unreliable
+  
+  if (this->GPS.secondsSinceFix()<5) { // consider anything < 5sec a Fix
+    return true;
+  }
+  return false;
+
+  
 }
 
 void SATCOMRelay::gpsStandby() {
-  boolean result = GPS.standby();
-  this->gpsCommandedState = STANDBY;
-  #if DEBUG_MODE
-  if (result) { //False if already in standby, true if it entered standby
-    Serial.println("GPS.standby() returned true");
-  } else {
-    Serial.println("GPS.standby() returned false");
+  if (this->gpsCommandedState != STANDBY) {
+    digitalWrite(GPS_EN_PIN, HIGH);  
+    this->gpsCommandedState = STANDBY;
+
+    #if DEBUG_MODE
+    Serial.println("DEBUG: gpsStandby()");
+    #endif
   }
-  #endif
 }
 
 void SATCOMRelay::gpsWakeup() {
-  boolean result = GPS.wakeup();
-  this->gpsCommandedState = WAKEUP;
-  #if DEBUG_MODE
-  if (result) { //True if woken up, false if not in standby or failed to wake
-    Serial.println("GPS.wakeup() returned true");
-  } else {
-    Serial.println("GPS.wakeup() returned false");
+  if (this->gpsCommandedState != WAKEUP) {
+    digitalWrite(GPS_EN_PIN, LOW);
+    this->gpsCommandedState = WAKEUP;
+
+    #if DEBUG_MODE
+    Serial.println("DEBUG: gpsWakeup()");
+    #endif
   }
-  #endif
 }
 
 void SATCOMRelay::printGPS() {
@@ -120,10 +126,10 @@ float SATCOMRelay::getLon() {
 }
 
 void SATCOMRelay::print() {
-  Serial.println("RELAY STATE:");
-  Serial.print("\tLatitude: ");
+  Serial.println("SATCOM RELAY STATUS:");
+  Serial.print("\tGPS Latitude: ");
   Serial.println(GPS.latitude_fixed);
-  Serial.print("\tLongitude: ");
+  Serial.print("\tGPS Longitude: ");
   Serial.println(GPS.longitude_fixed);
   Serial.print("\tGPS Time: ");
   if (GPS.hour < 10)
@@ -153,7 +159,7 @@ void SATCOMRelay::print() {
     Serial.print("0");
   }
   Serial.println(GPS.milliseconds);
-  Serial.print("\tGPS State: ");
+  Serial.print("\tGPS Commanded State: ");
   if (this->gpsCommandedState == 1) {
     Serial.println("STANDBY");
   } else if (this->gpsCommandedState == 2) {
@@ -161,5 +167,7 @@ void SATCOMRelay::print() {
   } else {
     Serial.println("NOT_SET");      
   }
+  Serial.print("\tGPS Second Since Fix: ");
+  Serial.println(GPS.secondsSinceFix());
   
 }

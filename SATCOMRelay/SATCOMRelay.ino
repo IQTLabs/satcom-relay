@@ -15,10 +15,14 @@ void loop() {
   relay.readGPSSerial(); // we need to keep reading in main loop to keep GPS serial buffer clear
   if (millis() - gpsTimer > GPS_WAKEUP_INTERVAL) { // wake up the GPS until we get a fix or timeout
     relay.gpsWakeup();
-    if (relay.gpsFix() || (millis() - gpsTimer > GPS_WAKEUP_INTERVAL+GPS_LOCK_TIMEOUT)) { // TODO: double check this timeout logic
+    // TODO: double check this timeout logic
+    if (relay.gpsFix() || (millis() - gpsTimer > GPS_WAKEUP_INTERVAL+GPS_LOCK_TIMEOUT)) { 
       relay.gpsStandby();
       gpsTimer = millis(); // reset the timer
-    }
+      #if DEBUG_MODE
+      Serial.print("DEBUG: ");if (relay.gpsFix()) {Serial.println("GOT GPS FIX");} else {Serial.println("GPS FIX TIMEOUT");}
+      #endif
+    } 
     //relay.printGPS();
   }
 
