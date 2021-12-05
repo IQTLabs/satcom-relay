@@ -1,9 +1,10 @@
 #include "SATCOMRelay.h"
 
-uint32_t testModePrintTimer = millis();
+
 
 SATCOMRelay relay;
-uint32_t gpsTimer = millis();
+
+uint32_t gpsTimer, testModePrintTimer, batteryCheckTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
 
 void setup() {
   Serial.begin(115200);
@@ -24,6 +25,10 @@ void loop() {
       #endif
     } 
     //relay.printGPS();
+  }
+
+  if (millis() - batteryCheckTimer > BATTERY_CHECK_INTERVAL) { 
+    relay.checkBatteryVoltage();
   }
 
   #if TEST_MODE // print the state of the relay

@@ -15,6 +15,7 @@ void SERCOM1_Handler()
 
 SATCOMRelay::SATCOMRelay() {
   pinMode(GPS_EN_PIN, OUTPUT);
+  pinMode(VBATPIN, INPUT);
 }
 
 int SATCOMRelay::initGPS() {
@@ -169,5 +170,15 @@ void SATCOMRelay::print() {
   }
   Serial.print("\tGPS Second Since Fix: ");
   Serial.println(GPS.secondsSinceFix());
-  
+  Serial.print("\tBattery Voltage: ");
+  Serial.println(this->battery);
+}
+
+void SATCOMRelay::checkBatteryVoltage() {
+  float measuredvbat = analogRead(VBATPIN);
+  measuredvbat *= 2;    // we divided by 2, so multiply back
+  measuredvbat *= 3.3;  // Multiply by 3.3V, our reference voltage
+  measuredvbat /= 1024; // convert to voltage
+  this->battery = measuredvbat;
+  //Serial.print("VBat: " ); Serial.println(measuredvbat);
 }

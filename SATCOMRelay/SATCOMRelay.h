@@ -21,6 +21,9 @@
 #define GPS_WAKEUP_INTERVAL 10000
 #define GPS_LOCK_TIMEOUT 60000
 
+#define VBATPIN 9 //A7
+#define BATTERY_CHECK_INTERVAL 10000
+
 enum gpsState{NOT_SET, STANDBY, WAKEUP};
 
 class SATCOMRelay {
@@ -41,5 +44,6 @@ class SATCOMRelay {
     float getLat();
     float getLon();
     void print();
+    void checkBatteryVoltage();
 };
 #endif
