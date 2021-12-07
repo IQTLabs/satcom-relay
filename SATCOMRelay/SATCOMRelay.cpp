@@ -7,14 +7,6 @@ void SERCOM2_Handler()
   GPSSerial.IrqHandler();
 }
 
-Uart IridiumSerial (&sercom1, IRIDIUM_RX_PIN, IRIDIUM_TX_PIN, SERCOM_RX_PAD_0, UART_TX_PAD_2);
-void SERCOM1_Handler()
-{
-  IridiumSerial.IrqHandler();
-}
-
-IridiumSBD modem(IridiumSerial);
-
 SATCOMRelay::SATCOMRelay() {
   pinMode(GPS_EN_PIN, OUTPUT);
   pinMode(VBATPIN, INPUT);
@@ -121,11 +113,11 @@ void SATCOMRelay::printGPS() {
 }
 
 float SATCOMRelay::getLat() {
-  return GPS.longitude;
+  return GPS.latitudeDegrees;
 }
 
 float SATCOMRelay::getLon() {
-  return GPS.longitude;
+  return GPS.longitudeDegrees;
 }
 
 void SATCOMRelay::print() {
@@ -185,116 +177,11 @@ void SATCOMRelay::checkBatteryVoltage() {
   //Serial.print("VBat: " ); Serial.println(measuredvbat);
 }
 
-int SATCOMRelay::initIridium() {
-  int result;
-
-  IridiumSerial.begin(19200);
-
-  // Assign pins SERCOM functionality
-  pinPeripheral(IRIDIUM_RX_PIN, PIO_SERCOM);
-  pinPeripheral(IRIDIUM_TX_PIN, PIO_SERCOM);
-
-  // If we're powering the device by USB, tell the library to
-  // relax timing constraints waiting for the supercap to recharge.
-  modem.setPowerProfile(IridiumSBD::USB_POWER_PROFILE);
-
-  Serial.println("Starting modem...");
-  result = modem.begin();
-
-  if (result == ISBD_SUCCESS) {
-    Serial.println("Iridium started.");
-  } else {
-    #if DEBUG_MODE
-    printIridiumError(results);
-    #endif
-  }
-
-  return result;
-}
-
-int SATCOMRelay::getIridiumIMEI() {
-  int result;
-  char IMEI[16];
-  result = modem.getIMEI(IMEI, sizeof(IMEI));
-  
-  if (result == ISBD_SUCCESS) {
-    Serial.print("Iridium IMEI: ");
-    Serial.println(IMEI);
-  } else {
-    #if DEBUG_MODE
-    printIridiumError(results);
-    #endif
-  }
-  
-  return result;
-}
-
-int SATCOMRelay::getIridiumTime() {
-  struct tm t;
-  int result = modem.getSystemTime(t);
-  
-  if (result == ISBD_SUCCESS) {
-    char buf[32];
-    sprintf(buf, "%d-%02d-%02d %02d:%02d:%02d",
-            t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
-    Serial.print("Iridium time/date is ");
-    Serial.println(buf);
-  } else {
-    #if DEBUG_MODE
-    printIridiumError(results);
-    #endif
-  }
-
-  return result;
-}
-
-void SATCOMRelay::printIridiumError(int error) {
-  Serial.print("ISBD ERROR CODE: ");
-  switch (error) {
-  case ISBD_SUCCESS:
-    Serial.println("ISBD_SUCCESS");
-    break;
-  case ISBD_ALREADY_AWAKE:
-    Serial.println("ISBD_ALREADY_AWAKE ");
-    break;
-  case ISBD_SERIAL_FAILURE:
-    Serial.println("ISBD_SERIAL_FAILURE");
-    break;
-  case ISBD_PROTOCOL_ERROR:
-    Serial.println("ISBD_PROTOCOL_ERROR");
-    break;
-  case ISBD_CANCELLED:
-    Serial.println("ISBD_CANCELLED");
-    break;
-  case ISBD_NO_MODEM_DETECTED:
-    Serial.println("ISBD_NO_MODEM_DETECTED");
-    break;
-  case ISBD_SBDIX_FATAL_ERROR:
-    Serial.println("ISBD_SBDIX_FATAL_ERROR");
-    break;
-  case ISBD_SENDRECEIVE_TIMEOUT:
-    Serial.println("ISBD_SENDRECEIVE_TIMEOUT");
-    break;
-  case ISBD_RX_OVERFLOW:
-    Serial.println("ISBD_RX_OVERFLOW");
-    break;
-  case ISBD_REENTRANT:
-    Serial.println("ISBD_REENTRANT");
-    break;
-  case ISBD_IS_ASLEEP:
-    Serial.println("ISBD_IS_ASLEEP");
-    break;
-  case ISBD_NO_SLEEP_PIN:
-    Serial.println("ISBD_NO_SLEEP_PIN");
-    break;
-  case ISBD_NO_NETWORK:
-    Serial.println("ISBD_NO_NETWORK");
-    break;
-  case ISBD_MSG_TOO_LONG:
-    Serial.println("ISBD_MSG_TOO_LONG");
-    break;
-  default:
-    Serial.println("Error finding the error code. Lol.");
-    break;
-  }
+void SATCOMRelay::getGPSTime(char * buf) {
+  sprintf(buf, "%d-%02d-%02d %02d:%02d:%02d",
+          GPS.year, GPS.month, GPS.day, GPS.hour, GPS.minute, GPS.seconds);
+  #if DEBUG_MODE
+  Serial.print("GPS time and date ");
+  Serial.println(buf);
+  #endif
 }

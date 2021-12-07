@@ -2,7 +2,6 @@
 #define SATCOMRelay_H
 
 #include <Arduino.h>
-#include <IridiumSBD.h>
 #include <Adafruit_GPS.h>
 #include <time.h>
 
@@ -20,10 +19,6 @@
 #define GPS_WAKEUP_INTERVAL 10000
 #define GPS_LOCK_TIMEOUT 60000
 
-#define IRIDIUM_RX_PIN 11
-#define IRIDIUM_TX_PIN 10
-#define IRIDIUM_DIAGNOSTICS false
-
 #define VBATPIN 9 //A7
 #define BATTERY_CHECK_INTERVAL 10000
 
@@ -39,7 +34,6 @@ private:
 public:
   SATCOMRelay();
   int initGPS();
-  int initIridium();
   boolean readGPSSerial();
   boolean gpsFix();
   void gpsStandby();
@@ -49,9 +43,8 @@ public:
   float getLon();
   void print();
   void checkBatteryVoltage();
-  int getIridiumIMEI();
-  int getIridiumTime();
   void printIridiumError(int error);
+  void getGPSTime(char * buf);
 };
 
 #endif
