@@ -1,4 +1,4 @@
-#include "SATCOMRelay.h"
+#include "satcom-relay.h"
 
 SATCOMRelay::SATCOMRelay() {
   pinMode(GPS_EN_PIN, OUTPUT);
