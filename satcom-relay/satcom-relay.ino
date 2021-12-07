@@ -3,15 +3,20 @@
 SATCOMRelay relay;
 
 uint32_t gpsTimer, testModePrintTimer, batteryCheckTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
+String msg;
 
 void setup() {
   while(!Serial);
   Serial.begin(115200);
 
+  // RF connection
+  Serial1.begin(115200);
+
   relay.gps.initGPS();
 }
 
 void loop() {
+  rfCheck();
   gpsCheck();
 
   batteryCheck();
@@ -25,6 +30,15 @@ void loop() {
   #endif
 }
 
+void rfCheck() {
+  // Read from RF device
+  while (Serial1.available() > 0) {
+    msg = Serial1.readString();
+    Serial.println((String)"RF: "+msg);
+    // TODO do something when message is received
+  }
+}
+
 void gpsCheck() {
   relay.gps.readGPSSerial(); // we need to keep reading in main loop to keep GPS serial buffer clear
   if (millis() - gpsTimer > GPS_WAKEUP_INTERVAL) { 
@@ -36,7 +50,7 @@ void gpsCheck() {
       #if DEBUG_MODE
       Serial.print("DEBUG: ");if (relay.gps.gpsHasFix()) {Serial.println("GOT GPS FIX");} else {Serial.println("GPS FIX TIMEOUT");}
       #endif
-    } 
+    }
   }
 }
 
