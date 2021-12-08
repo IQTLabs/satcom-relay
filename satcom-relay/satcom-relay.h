@@ -11,6 +11,7 @@
 
 #define VBATPIN 9 //A7
 #define BATTERY_CHECK_INTERVAL 10000
+#define AWAKE_INTERVAL (60 * 1000)
 
 class SATCOMRelay {
 
