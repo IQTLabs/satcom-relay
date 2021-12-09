@@ -81,6 +81,7 @@ void rfCheck() {
     Serial.println((String)"RF: "+msg);
     // TODO do something when message is received
   }
+  Serial1.write('\n');
 }
 
 void gpsCheck() {
