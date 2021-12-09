@@ -113,6 +113,8 @@ void sleepCheck() {
     __WFI();  // wake from interrupt
     Serial.println("wake due to interrupt");
     Serial.println();
+    // request repeat of last message.
+    Serial1.println();
   }
   // toggle output of built-in LED pin
   PORT->Group[g_APinDescription[LED_BUILTIN].ulPort].OUTTGL.reg = (uint32_t)(1<<g_APinDescription[LED_BUILTIN].ulPin);
