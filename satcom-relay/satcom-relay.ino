@@ -25,7 +25,7 @@ void setup() {
   Serial.begin(115200);
 
   // RF connection
-  Serial1.begin(115200);
+  Serial1.begin(57600);
 
   relay.gps.initGPS();
 
@@ -78,7 +78,7 @@ void rfCheck() {
   // Read from RF device
   while (Serial1.available() > 0) {
     msg = Serial1.readString();
-    Serial.println((String)"RF: "+msg);
+    Serial.println(msg);
     // TODO do something when message is received
   }
   Serial1.write('\n');
