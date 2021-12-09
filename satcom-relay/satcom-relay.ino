@@ -8,7 +8,7 @@ uint32_t gpsTimer, testModePrintTimer, batteryCheckTimer = 2000000000L; // Make 
 volatile uint32_t awakeTimer = 0;
 String msg;
 byte i = 0;
-const byte bufferSize = 128;
+const byte bufferSize = 150;
 char readBuffer[bufferSize] = {};
 DynamicJsonDocument doc(bufferSize);
 
