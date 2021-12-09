@@ -1,11 +1,16 @@
+#include <ArduinoJson.h>
 #include "satcom-relay.h"
 
 SATCOMRelay relay;
 
+const char fwVersion[] = "1.0.0";
 uint32_t gpsTimer, testModePrintTimer, batteryCheckTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
 volatile uint32_t awakeTimer = 0;
 String msg;
-
+byte i = 0;
+const byte bufferSize = 128;
+char readBuffer[bufferSize] = {};
+DynamicJsonDocument doc(bufferSize);
 
 #define interruptPin 15
 
@@ -25,6 +30,7 @@ void setup() {
   Serial.begin(115200);
 
   // RF connection
+  memset(readBuffer, 0, sizeof(readBuffer));
   Serial1.begin(57600);
 
   relay.gps.initGPS();
@@ -76,12 +82,9 @@ void setupInterruptSleep() {
 
 void rfCheck() {
   // Read from RF device
-  while (Serial1.available() > 0) {
-    msg = Serial1.readString();
-    Serial.println(msg);
-    // TODO do something when message is received
+  if (getSerial1()) {
+    handleReadBuffer();
   }
-  Serial1.write('\n');
 }
 
 void gpsCheck() {
@@ -123,4 +126,40 @@ void sleepCheck() {
 
 void EIC_ISR(void) {
   awakeTimer = millis(); // refresh awake timer.
+}
+
+bool getSerial1() {
+  if (Serial1.available()) {
+    char c = Serial1.read();
+    if (i == (sizeof(readBuffer) - 1)) {
+      c = 0;
+    }
+    if (c == '\n' || c == '\r') {
+      c = 0;
+    }
+    readBuffer[i] = c;
+    if (c == 0) {
+      i = 0;
+      return true;
+    } else {
+      ++i;
+    }
+  }
+  return false;
+}
+
+void handleReadBuffer() {
+  doc.clear();
+  DeserializationError error = deserializeJson(doc, readBuffer);
+  if (error) {
+    Serial.print("FAILED: trying to parse JSON: ");
+    Serial.println(error.c_str());
+    doc.clear();
+  }
+  doc["uptime_ms"] = millis();
+  doc["version"] = fwVersion;
+  serializeJson(doc, Serial);
+  // TODO do something with JSON doc
+  Serial.println();
+  memset(readBuffer, 0, sizeof(readBuffer));
 }
