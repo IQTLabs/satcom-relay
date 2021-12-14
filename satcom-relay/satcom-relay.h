@@ -2,6 +2,7 @@
 #define SATCOMRelay_H
 
 #include <Arduino.h>
+#include <Adafruit_SleepyDog.h>
 #include "gps.h"
 
 #define TEST_MODE true
@@ -12,6 +13,8 @@
 #define VBATPIN 9 //A7
 #define BATTERY_CHECK_INTERVAL 10000
 #define AWAKE_INTERVAL (60 * 1000)
+
+#define LED_BLINK_TIMER 500
 
 class SATCOMRelay {
 

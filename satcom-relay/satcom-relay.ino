@@ -4,7 +4,7 @@
 SATCOMRelay relay;
 
 const char fwVersion[] = "1.0.0";
-uint32_t gpsTimer, testModePrintTimer, batteryCheckTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
+uint32_t gpsTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
 volatile uint32_t awakeTimer = 0;
 String msg;
 byte i = 0;
@@ -26,12 +26,14 @@ unsigned long nowTimeDiff(unsigned long x) {
 }
 
 void setup() {
-  while(!Serial);
+  //while(!Serial);
   Serial.begin(115200);
 
   // RF connection
   memset(readBuffer, 0, sizeof(readBuffer));
   Serial1.begin(57600);
+
+  pinMode(LED_BUILTIN, OUTPUT);
 
   relay.gps.initGPS();
 
@@ -44,6 +46,7 @@ void loop() {
   gpsCheck();
   batteryCheck();
   sleepCheck();
+  checkLEDBlink();
 
   #if TEST_MODE // print the state of the relay
   if (nowTimeDiff(testModePrintTimer) > TEST_MODE_PRINT_INTERVAL) {
@@ -74,10 +77,6 @@ void setupInterruptSleep() {
 
   // It is either Idle mode or Standby mode, not both.
   SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;   // Enable Standby or "deep sleep" mode
-
-  // Built-in LED set to output and high
-  PORT->Group[g_APinDescription[LED_BUILTIN].ulPort].DIRSET.reg = (uint32_t)(1<<g_APinDescription[LED_BUILTIN].ulPin);
-  PORT->Group[g_APinDescription[LED_BUILTIN].ulPort].OUTSET.reg = (uint32_t)(1<<g_APinDescription[LED_BUILTIN].ulPin);
 }
 
 void rfCheck() {
@@ -112,16 +111,19 @@ void batteryCheck() {
 void sleepCheck() {
   if (nowTimeDiff(awakeTimer) > AWAKE_INTERVAL) {
     // set pin mode to low
-    PORT->Group[g_APinDescription[LED_BUILTIN].ulPort].OUTCLR.reg = (uint32_t)(1<<g_APinDescription[LED_BUILTIN].ulPin);
+    digitalWrite(LED_BUILTIN, LOW);
     Serial.println("sleeping as timed out");
+    USBDevice.detach();
     __WFI();  // wake from interrupt
+    USBDevice.attach();
+    delay(500);
     Serial.println("wake due to interrupt");
     Serial.println();
     // request repeat of last message.
     Serial1.println();
+    // toggle output of built-in LED pin
+    digitalWrite(LED_BUILTIN, HIGH);
   }
-  // toggle output of built-in LED pin
-  PORT->Group[g_APinDescription[LED_BUILTIN].ulPort].OUTTGL.reg = (uint32_t)(1<<g_APinDescription[LED_BUILTIN].ulPin);
 }
 
 void EIC_ISR(void) {
@@ -162,4 +164,11 @@ void handleReadBuffer() {
   // TODO do something with JSON doc
   Serial.println();
   memset(readBuffer, 0, sizeof(readBuffer));
+}
+
+void checkLEDBlink() {
+  if (nowTimeDiff(ledBlinkTimer) > LED_BLINK_TIMER) {
+    ledBlinkTimer = millis(); // reset the timer
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  }
 }
