@@ -20,3 +20,9 @@ The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://
 ### Wiring Diagram
 
 ![fritzing](fritzing/satcom-relay_bb.png)
+
+## Operations
+
+The M0 uses Serial1 (RX0 and TX1) to listen for JSON messages from other devices. These messages then get additional keys added (`uptime_ms` and `version`) and then logged out the console.
+
+The M0 will automatically go to sleep after `AWAKE_INTERVAL` (1 minute) if the interrupt pin (A1) hasn't been toggled. Every time the interrupt pin is toggled the `awakeTimer` is reset and the count towards `AWAKE_INTERVAL` starts over. When in sleep mode, toggling the interrupt pin will wake up the M0 again.
