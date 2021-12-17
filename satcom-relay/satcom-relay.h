@@ -2,7 +2,6 @@
 #define SATCOMRelay_H
 
 #include <Arduino.h>
-#include <Adafruit_SleepyDog.h>
 #include "gps.h"
 
 #define TEST_MODE true
