@@ -35,6 +35,10 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);
 
+  // Assign pins 10 & 11 SERCOM functionality
+  pinPeripheral(IRIDIUM_INTERFACE_RX_PIN, PIO_SERCOM);
+  pinPeripheral(IRIDIUM_INTERFACE_TX_PIN, PIO_SERCOM);
+
   relay.gps.initGPS();
 
   // Setup interrupt sleep pin

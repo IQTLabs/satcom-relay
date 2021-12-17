@@ -1,5 +1,11 @@
 #include "satcom-relay.h"
 
+Uart IridiumInterfaceSerial (&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
+void SERCOM1_Handler()
+{
+  IridiumInterfaceSerial.IrqHandler();
+}
+
 SATCOMRelay::SATCOMRelay() {
   pinMode(GPS_EN_PIN, OUTPUT);
   pinMode(VBATPIN, INPUT);
