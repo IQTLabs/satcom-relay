@@ -6,21 +6,21 @@
 #define RX_PAD SERCOM_RX_PAD_2
 #define TX_PAD UART_TX_PAD_0
 
-Uart IridiumControllerSerial (&sercom3, RX_PIN, TX_PIN, RX_PAD, TX_PAD);
-void SERCOM3_Handler()
+Uart IridiumInterfaceSerial (&sercom1, RX_PIN, TX_PIN, RX_PAD, TX_PAD);
+void SERCOM1_Handler()
 {
-  IridiumControllerSerial.IrqHandler();
+  IridiumInterfaceSerial.IrqHandler();
 }
 
 uint32_t messageTimer, blinkTimer = millis();
 
 void setup() {
   Serial.begin(115200);
-  IridiumControllerSerial.begin(115200);
+  IridiumInterfaceSerial.begin(115200);
 
   // Assign pins 10 & 11 SERCOM functionality
-  pinPeripheral(RX_PIN, PIO_SERCOM_ALT);
-  pinPeripheral(TX_PIN, PIO_SERCOM_ALT);
+  pinPeripheral(RX_PIN, PIO_SERCOM);
+  pinPeripheral(TX_PIN, PIO_SERCOM);
 
   pinMode(19, OUTPUT); //A5
   pinMode(LED_BUILTIN, OUTPUT);
@@ -28,7 +28,7 @@ void setup() {
 
 void sendMessage() {
   Serial.print("Sending message...");
-  IridiumControllerSerial.println("Test message");
+  IridiumInterfaceSerial.println("Test message");
   Serial.println("done");
 }
 
@@ -40,8 +40,8 @@ void loop() {
     sendMessage();
   }
 
-  if (IridiumControllerSerial.available() > 0) {
-    if (IridiumControllerSerial.read() == '\n') {
+  if (IridiumInterfaceSerial.available() > 0) {
+    if (IridiumInterfaceSerial.read() == '\n') {
       Serial.println("Received newline / resend request");
       sendMessage();
     }
