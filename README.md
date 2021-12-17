@@ -15,7 +15,8 @@ The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://
 ### Arduino Libraries
 
 - Adafruit GPS Library by Adafruit
-- IridiumSBDi2c by SparkFun Electronics [(diagram)](https://docs.rockblock.rock7.com/docs/connectors)
+- IridiumSBDi2c by SparkFun Electronics [(datasheet)](https://docs.rockblock.rock7.com/docs/connectors)
+- ArduinoJson by Benoit Blanchon
 
 ### Wiring Diagram
 
