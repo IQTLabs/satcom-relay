@@ -56,7 +56,8 @@ void loop() {
   gpsCheck();
   batteryCheck();
   sleepCheck();
-  checkLEDBlink();
+  ledBlinkCheck();
+  iridiumInterfaceCheck();
 
   #if TEST_MODE // print the state of the relay
   if (nowTimeDiff(testModePrintTimer) > TEST_MODE_PRINT_INTERVAL) {
@@ -96,6 +97,7 @@ void rfCheck() {
   }
 }
 
+// Periodically check the GPS for current position
 void gpsCheck() {
   relay.gps.readGPSSerial(); // we need to keep reading in main loop to keep GPS serial buffer clear
   if (nowTimeDiff(gpsTimer) > GPS_WAKEUP_INTERVAL) {
@@ -111,6 +113,7 @@ void gpsCheck() {
   }
 }
 
+// Periodically check the battery level and update member variable
 void batteryCheck() {
   if (nowTimeDiff(batteryCheckTimer) > BATTERY_CHECK_INTERVAL) {
     batteryCheckTimer = millis(); // reset the timer
@@ -182,9 +185,21 @@ void handleReadBuffer() {
   memset(readBuffer, 0, sizeof(readBuffer));
 }
 
-void checkLEDBlink() {
+// Blink to show the Relay MCU is awake
+void ledBlinkCheck() {
   if (nowTimeDiff(ledBlinkTimer) > LED_BLINK_TIMER) {
     ledBlinkTimer = millis(); // reset the timer
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  }
+}
+
+// If the Iridium Interface MCU misses the initial message because it was sleeping it will send a \n to request a resend
+void iridiumInterfaceCheck() {
+  if (IridiumInterfaceSerial.available() > 0) {
+    if (IridiumInterfaceSerial.read() == '\n') {
+      Serial.println("Received newline/resend request from Iridium Interface");
+      // TODO check this before sending
+      serializeJson(doc, IridiumInterfaceSerial);
+    }
   }
 }
