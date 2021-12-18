@@ -12,6 +12,12 @@ const byte bufferSize = 150;
 char readBuffer[bufferSize] = {};
 DynamicJsonDocument doc(bufferSize);
 
+Uart IridiumInterfaceSerial (&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
+void SERCOM1_Handler()
+{
+  IridiumInterfaceSerial.IrqHandler();
+}
+
 #define interruptPin 15
 
 unsigned long timeDiff(unsigned long x, unsigned long nowTime) {
@@ -161,12 +167,18 @@ void handleReadBuffer() {
     Serial.print("FAILED: trying to parse JSON: ");
     Serial.println(error.c_str());
     doc.clear();
+  } else {
+    doc["uptime_ms"] = millis();
+    doc["version"] = fwVersion;
+    doc["lat"] = relay.gps.getLastFixLatitude();
+    doc["lon"] = relay.gps.getLastFixLongitude();
+    doc["bat"] = relay.getBatteryVoltage();
+    digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, !digitalRead(IRIDIUM_INTERFACE_WAKEUP_PIN));
+    delay(500);
+    serializeJson(doc, IridiumInterfaceSerial);
+    serializeJson(doc, Serial);
+    Serial.println();
   }
-  doc["uptime_ms"] = millis();
-  doc["version"] = fwVersion;
-  serializeJson(doc, Serial);
-  // TODO do something with JSON doc
-  Serial.println();
   memset(readBuffer, 0, sizeof(readBuffer));
 }
 
