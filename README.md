@@ -1,6 +1,6 @@
 # Satellite Communication Relay
 
-A SATCOM platform for relaying messages in remote locations
+A SATCOM platform for relaying messages in remote locations.  This project provides a standard interface for messages to be relayed over a Satcom link.  Initially, this is  using the RockBlock Iridium 9603 satellite modem, but the system is designed to be able to handle any other satcom system designed for small burst data transmissions.
 
 ## About
 
@@ -21,6 +21,23 @@ The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://
 ### Wiring Diagram
 
 ![fritzing](fritzing/satcom-relay_bb.png)
+
+
+### Architecture Diagram
+
+![architecture](assets/architecture.jpg)
+
+### Bill of Materials
+| Short Name | Product Name | Price | Link |
+| ---------- | ------------ | ----- | ---- |
+| MCU | Feather M0 Basic Proto | $19.95 | https://www.adafruit.com/product/2772 |
+| GPS | Ultimate GPS FeatherWing | $24.95 | https://www.adafruit.com/product/3133 |
+| SatComProcessor | Feather M0 Adalogger | $19.95 | https://www.adafruit.com/product/2796 |
+| SatCom | RockBlock 9603N | $249.95 | https://www.adafruit.com/product/4521 |
+| PCB-A | Feather Quad Side-By-Side | $9.95 | https://www.adafruit.com/product/4254 |
+| PCB-B | RockBlock to Feather Adapter | --- | ./electrical/IridiumPCB |
+| Battery | 2500mAh LiPo Battery | 14.95 |https://www.adafruit.com/product/328 |
+
 
 ## Operations
 
