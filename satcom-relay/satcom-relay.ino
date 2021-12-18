@@ -56,7 +56,7 @@ void loop() {
   gpsCheck();
   batteryCheck();
   sleepCheck();
-  checkLEDBlink();
+  ledBlinkCheck();
 
   #if TEST_MODE // print the state of the relay
   if (nowTimeDiff(testModePrintTimer) > TEST_MODE_PRINT_INTERVAL) {
@@ -182,7 +182,7 @@ void handleReadBuffer() {
   memset(readBuffer, 0, sizeof(readBuffer));
 }
 
-void checkLEDBlink() {
+void ledBlinkCheck() {
   if (nowTimeDiff(ledBlinkTimer) > LED_BLINK_TIMER) {
     ledBlinkTimer = millis(); // reset the timer
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
