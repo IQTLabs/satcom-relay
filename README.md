@@ -35,7 +35,7 @@ The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://
 | SatComProcessor | Feather M0 Adalogger | $19.95 | https://www.adafruit.com/product/2796 |
 | SatCom | RockBlock 9603N | $249.95 | https://www.adafruit.com/product/4521 |
 | PCB-A | Feather Quad Side-By-Side | $9.95 | https://www.adafruit.com/product/4254 |
-| PCB-B | RockBlock to Feather Adapter | --- | ./electrical/IridiumPCB |
+| PCB-B | RockBlock to Feather Adapter | --- | [Design Files](./electrical/IridiumPCB) |
 | Battery | 2500mAh LiPo Battery | 14.95 |https://www.adafruit.com/product/328 |
 
 
