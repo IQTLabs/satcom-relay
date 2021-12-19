@@ -35,7 +35,7 @@ void setup() {
   //while(!Serial);
   Serial.begin(115200);
 
-  // RF connection
+  // message connection
   memset(readBuffer, 0, sizeof(readBuffer));
   Serial1.begin(57600);
 
@@ -52,7 +52,7 @@ void setup() {
 }
 
 void loop() {
-  rfCheck();
+  msgCheck();
   gpsCheck();
   batteryCheck();
   sleepCheck();
@@ -90,8 +90,8 @@ void setupInterruptSleep() {
   SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;   // Enable Standby or "deep sleep" mode
 }
 
-void rfCheck() {
-  // Read from RF device
+void msgCheck() {
+  // Read from Serial1
   if (getSerial1()) {
     handleReadBuffer();
   }
@@ -126,6 +126,8 @@ void sleepCheck() {
     // set pin mode to low
     digitalWrite(LED_BUILTIN, LOW);
     Serial.println("sleeping as timed out");
+    // make sure GPS also goes to sleep
+    relay.gps.gpsStandby();
     USBDevice.detach();
     __WFI();  // wake from interrupt
     USBDevice.attach();
