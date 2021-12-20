@@ -4,8 +4,8 @@
 #include <Adafruit_GPS.h>
 #include "wiring_private.h" // SERCOM pinPeripheral() function
 
-#define GPS_NMEA_MESSAGES false // show gps serial messages
-#define GPS_DEBUG false
+//#define GPS_NMEA_MESSAGES false // show gps serial messages
+//#define GPS_DEBUG false
 
 #define GPS_EN_PIN 14 //A0
 #define GPS_RX_PIN 5
