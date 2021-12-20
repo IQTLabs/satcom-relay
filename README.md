@@ -36,7 +36,8 @@ The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://
 | SatCom | RockBlock 9603N | $249.95 | https://www.adafruit.com/product/4521 |
 | PCB-A | Feather Quad Side-By-Side | $9.95 | https://www.adafruit.com/product/4254 |
 | PCB-B | RockBlock to Feather Adapter | --- | [Design Files](./electrical/IridiumPCB) |
-| Battery | 2500mAh LiPo Battery | 14.95 |https://www.adafruit.com/product/328 |
+| Battery | 2500mAh LiPo Battery | $14.95 | https://www.adafruit.com/product/328 |
+| GPS Battery | CR1220 Coin Cell Battery | $0.95 | https://www.adafruit.com/product/380 |
 
 
 ## Operations

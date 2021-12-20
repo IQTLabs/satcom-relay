@@ -6,7 +6,6 @@ SATCOMRelay relay;
 const char fwVersion[] = "1.0.0";
 uint32_t gpsTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
 volatile uint32_t awakeTimer = 0;
-String msg;
 byte i = 0;
 const byte bufferSize = 150;
 char readBuffer[bufferSize] = {};
@@ -128,9 +127,8 @@ void sleepCheck() {
     Serial.println("sleeping as timed out");
     // make sure GPS also goes to sleep
     relay.gps.gpsStandby();
-    USBDevice.detach();
+    USBDevice.standby();
     __WFI();  // wake from interrupt
-    USBDevice.attach();
     delay(500);
     Serial.println("wake due to interrupt");
     Serial.println();
