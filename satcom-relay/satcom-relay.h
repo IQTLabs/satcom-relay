@@ -32,7 +32,7 @@ public:
   SATCOMRelay();
   void print();
   void checkBatteryVoltage();
-  String getBatteryVoltage();
+  float getBatteryVoltage();
 };
 
 #endif

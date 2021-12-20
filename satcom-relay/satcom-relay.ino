@@ -7,9 +7,10 @@ const char fwVersion[] = "1.0.0";
 uint32_t gpsTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
 volatile uint32_t awakeTimer = 0;
 byte i = 0;
-const byte bufferSize = 150;
-char readBuffer[bufferSize] = {};
-DynamicJsonDocument doc(bufferSize);
+const byte readBufferSize = 150;
+const byte jsonBufferSize = 200;
+char readBuffer[readBufferSize] = {0};
+DynamicJsonDocument doc(jsonBufferSize);
 
 Uart IridiumInterfaceSerial (&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
 void SERCOM1_Handler()

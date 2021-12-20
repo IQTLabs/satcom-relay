@@ -15,7 +15,7 @@
 #define GPS_LOCK_TIMEOUT 60000
 
 enum GPSState{NOT_SET, STANDBY, WAKEUP};
-static char gpsStateStrings[3][10] = { "NOT_SET", "STANDBY", "WAKEUP" };
+const char * const gpsStateStrings[] = { "NOT_SET", "STANDBY", "WAKEUP" };
 
 class GPS {
 
@@ -23,9 +23,9 @@ private:
     Adafruit_GPS adafruitGPS;
     float lastFixLatitude;
     float lastFixLongitude;
-    char lastFixDate[32];
+    char lastFixDate[32] = {0};
     enum GPSState gpsCommandedState = NOT_SET;
-    void getGPSTime(char * buf);
+    void getGPSTime();
 
 public:
 
@@ -37,10 +37,10 @@ public:
     void printAdafruitGPS();
     float getLastFixLatitude();
     float getLastFixLongitude();
-    char * getLastFixDate();
+    const char * getLastFixDate();
     float getSecondsSinceLastFix();
     GPSState getGPSCommandedState();
-    char * getGPSCommandedStateString();
+    const char * getGPSCommandedStateString();
 };
 
 #endif

@@ -6,7 +6,6 @@ void SERCOM2_Handler()
   GPSSerial.IrqHandler();
 }
 
-
 int GPS::initGPS() {
   Adafruit_GPS temp_adafruitGPS(&GPSSerial);
   adafruitGPS = temp_adafruitGPS;
@@ -86,8 +85,8 @@ float GPS::getLastFixLongitude() {
   return this->lastFixLongitude;
 }
 
-void GPS::getGPSTime(char * buf) {
-  sprintf(buf, "%d-%02d-%02d %02d:%02d:%02d",
+void GPS::getGPSTime() {
+  sprintf(this->lastFixDate, "%d-%02d-%02d %02d:%02d:%02d",
           adafruitGPS.year, adafruitGPS.month, adafruitGPS.day, adafruitGPS.hour, adafruitGPS.minute, adafruitGPS.seconds);
   #if GPS_DEBUG
   Serial.print("GPS time and date ");
@@ -96,8 +95,12 @@ void GPS::getGPSTime(char * buf) {
 }
 
 boolean GPS::readGPSSerial() {
+  #ifdef GPS_NMEA_MESSAGES
   char c = this->adafruitGPS.read();
-  //if (c) Serial.print(c); //print this to see NMEA
+  if (c) Serial.print(c); //print this to see NMEA
+  #else
+  this->adafruitGPS.read();
+  #endif
 
   if (adafruitGPS.newNMEAreceived()) {
     // a tricky thing here is if we print the NMEA sentence, or data
@@ -110,7 +113,7 @@ boolean GPS::readGPSSerial() {
     if (adafruitGPS.parse(adafruitGPS.lastNMEA())) { // this also sets the newNMEAreceived() flag to false
       this->lastFixLatitude = adafruitGPS.latitudeDegrees;
       this->lastFixLongitude = adafruitGPS.longitudeDegrees;
-      getGPSTime(lastFixDate);
+      getGPSTime();
       return true; 
     }
   }
@@ -127,7 +130,7 @@ boolean GPS::gpsHasFix() {
     return false;
 }
 
-char * GPS::getLastFixDate() {
+const char * GPS::getLastFixDate() {
     return this->lastFixDate;
 }
 
@@ -139,6 +142,6 @@ GPSState GPS::getGPSCommandedState() {
     return this->gpsCommandedState;
 }
 
-char * GPS::getGPSCommandedStateString() {
+const char * GPS::getGPSCommandedStateString() {
     return gpsStateStrings[gpsCommandedState];
 }
