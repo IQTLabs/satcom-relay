@@ -11,6 +11,7 @@ const byte readBufferSize = 150;
 const byte jsonBufferSize = 200;
 char readBuffer[readBufferSize] = {0};
 DynamicJsonDocument doc(jsonBufferSize);
+bool iridium_wakeup_state = false;
 
 Uart IridiumInterfaceSerial (&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
 void SERCOM1_Handler()
@@ -177,7 +178,8 @@ void handleReadBuffer() {
     doc["lat"] = relay.gps.getLastFixLatitude();
     doc["lon"] = relay.gps.getLastFixLongitude();
     doc["bat"] = relay.getBatteryVoltage();
-    digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, !digitalRead(IRIDIUM_INTERFACE_WAKEUP_PIN));
+    iridium_wakeup_state = !iridium_wakeup_state;
+    digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
     delay(500);
     serializeJson(doc, IridiumInterfaceSerial);
     serializeJson(doc, Serial);
