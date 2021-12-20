@@ -23,9 +23,9 @@ private:
     Adafruit_GPS adafruitGPS;
     float lastFixLatitude;
     float lastFixLongitude;
-    char lastFixDate[32];
+    char lastFixDate[32] = {0};
     enum GPSState gpsCommandedState = NOT_SET;
-    void getGPSTime(char * buf);
+    void getGPSTime();
 
 public:
 
@@ -37,7 +37,7 @@ public:
     void printAdafruitGPS();
     float getLastFixLatitude();
     float getLastFixLongitude();
-    char * getLastFixDate();
+    const char * getLastFixDate();
     float getSecondsSinceLastFix();
     GPSState getGPSCommandedState();
     const char * getGPSCommandedStateString();
