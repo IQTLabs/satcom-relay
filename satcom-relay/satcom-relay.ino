@@ -199,11 +199,15 @@ void ledBlinkCheck() {
 
 // If the Iridium Interface MCU misses the initial message because it was sleeping it will send a \n to request a resend
 void iridiumInterfaceCheck() {
-  if (IridiumInterfaceSerial.available() > 0) {
+  bool sawNewline = false;
+  while (IridiumInterfaceSerial.available()) {
     if (IridiumInterfaceSerial.read() == '\n') {
-      Serial.println("Received newline/resend request from Iridium Interface");
-      // TODO check this before sending
-      serializeJson(doc, IridiumInterfaceSerial);
+      sawNewline = true;
     }
+  }
+  if (sawNewline) {
+    Serial.println("Received newline/resend request from Iridium Interface");
+    // TODO check this before sending
+    serializeJson(doc, IridiumInterfaceSerial);
   }
 }
