@@ -6,8 +6,9 @@ void SERCOM2_Handler()
   GPSSerial.IrqHandler();
 }
 
-
 int GPS::initGPS() {
+  memset(this->lastFixDate, 0, 32);
+
   Adafruit_GPS temp_adafruitGPS(&GPSSerial);
   adafruitGPS = temp_adafruitGPS;
 
@@ -139,6 +140,6 @@ GPSState GPS::getGPSCommandedState() {
     return this->gpsCommandedState;
 }
 
-char * GPS::getGPSCommandedStateString() {
+const char * GPS::getGPSCommandedStateString() {
     return gpsStateStrings[gpsCommandedState];
 }

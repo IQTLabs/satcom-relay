@@ -29,6 +29,6 @@ void SATCOMRelay::checkBatteryVoltage() {
   this->battery = measuredvbat;
 }
 
-String SATCOMRelay::getBatteryVoltage() {
-  return String(this->battery);
+float SATCOMRelay::getBatteryVoltage() {
+  return this->battery;
 }

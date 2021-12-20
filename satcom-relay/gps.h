@@ -15,7 +15,7 @@
 #define GPS_LOCK_TIMEOUT 60000
 
 enum GPSState{NOT_SET, STANDBY, WAKEUP};
-static char gpsStateStrings[3][10] = { "NOT_SET", "STANDBY", "WAKEUP" };
+const char * const gpsStateStrings[] = { "NOT_SET", "STANDBY", "WAKEUP" };
 
 class GPS {
 
@@ -40,7 +40,7 @@ public:
     char * getLastFixDate();
     float getSecondsSinceLastFix();
     GPSState getGPSCommandedState();
-    char * getGPSCommandedStateString();
+    const char * getGPSCommandedStateString();
 };
 
 #endif
