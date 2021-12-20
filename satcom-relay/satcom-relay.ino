@@ -129,6 +129,7 @@ void sleepCheck() {
     Serial.println("sleeping as timed out");
     // make sure GPS also goes to sleep
     relay.gps.gpsStandby();
+    delay(500);
     USBDevice.standby();
     __WFI();  // wake from interrupt
     delay(500);
@@ -181,7 +182,7 @@ void handleReadBuffer() {
     iridium_wakeup_state = !iridium_wakeup_state;
     digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
     delay(500);
-    serializeJson(doc, IridiumInterfaceSerial);
+    //serializeJson(doc, IridiumInterfaceSerial);
     serializeJson(doc, Serial);
     Serial.println();
   }
