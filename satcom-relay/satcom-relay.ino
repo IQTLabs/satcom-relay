@@ -135,8 +135,15 @@ void sleepCheck() {
     // make sure GPS also goes to sleep
     relay.gps.gpsStandby();
     delay(500);
+    #if WINDOWS_DEV
+    USBDevice.detach();
+    #else
     USBDevice.standby();
+    #endif
     __WFI();  // wake from interrupt
+    #if WINDOWS_DEV
+    USBDevice.attach();
+    #endif
     delay(500);
     Serial.println("wake due to interrupt");
     Serial.println();
