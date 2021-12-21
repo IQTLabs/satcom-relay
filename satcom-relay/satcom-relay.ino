@@ -34,7 +34,6 @@ unsigned long nowTimeDiff(unsigned long x) {
 }
 
 void setup() {
-  //while(!Serial);
   Serial.begin(115200);
 
   // message connection
@@ -185,7 +184,7 @@ void handleReadBuffer() {
     iridium_wakeup_state = !iridium_wakeup_state;
     digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
     delay(500);
-    //serializeJson(doc, IridiumInterfaceSerial);
+    serializeJson(doc, IridiumInterfaceSerial);
     serializeJson(doc, Serial);
     Serial.println();
   }
