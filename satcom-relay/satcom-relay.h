@@ -14,7 +14,7 @@
 #define AWAKE_INTERVAL (60 * 1000)
 
 #define LED_BLINK_TIMER 500
-
+// https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports
 #define IRIDIUM_INTERFACE_WAKEUP_PIN 19
 #define IRIDIUM_INTERFACE_RX_PIN 10
 #define IRIDIUM_INTERFACE_TX_PIN 11
