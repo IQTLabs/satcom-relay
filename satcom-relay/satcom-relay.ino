@@ -14,6 +14,7 @@ DynamicJsonDocument doc(jsonBufferSize);
 bool iridium_wakeup_state = false;
 
 Uart IridiumInterfaceSerial (&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
+
 void SERCOM1_Handler()
 {
   IridiumInterfaceSerial.IrqHandler();
@@ -39,6 +40,8 @@ void setup() {
   // message connection
   memset(readBuffer, 0, sizeof(readBuffer));
   Serial1.begin(57600);
+
+  IridiumInterfaceSerial.begin(57600);
 
   pinMode(LED_BUILTIN, OUTPUT);
 
