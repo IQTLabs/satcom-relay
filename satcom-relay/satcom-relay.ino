@@ -34,6 +34,9 @@ unsigned long nowTimeDiff(unsigned long x) {
 }
 
 void setup() {
+  pinMode(IRIDIUM_INTERFACE_WAKEUP_PIN, OUTPUT);
+  digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
+
   Serial.begin(115200);
 
   // message connection
