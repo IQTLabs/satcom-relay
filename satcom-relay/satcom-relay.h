@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "gps.h"
 
-#define WINDOWS_DEV true
+#define WINDOWS_DEV
 
 #define TEST_MODE true
 #define TEST_MODE_PRINT_INTERVAL 2000 // use for testing. prints relay status to Serial
