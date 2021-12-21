@@ -109,7 +109,7 @@ void gpsCheck() {
   if (nowTimeDiff(gpsTimer) > GPS_WAKEUP_INTERVAL) {
     relay.gps.gpsWakeup(); // wake up the GPS until we get a fix or timeout
     // TODO: double check this timeout logic
-    if (relay.gps.gpsHasFix() || (nowTimeDiff(gpsTimer) > GPS_WAKEUP_INTERVAL+GPS_LOCK_TIMEOUT)) { 
+    if (relay.gps.gpsHasFix() || (nowTimeDiff(gpsTimer) > GPS_WAKEUP_INTERVAL+GPS_LOCK_TIMEOUT)) {
       relay.gps.gpsStandby();
       gpsTimer = millis(); // reset the timer
       #if DEBUG_MODE
@@ -135,8 +135,15 @@ void sleepCheck() {
     // make sure GPS also goes to sleep
     relay.gps.gpsStandby();
     delay(500);
+    #ifdef WINDOWS_DEV
+    USBDevice.detach();
+    #else
     USBDevice.standby();
+    #endif
     __WFI();  // wake from interrupt
+    #ifdef WINDOWS_DEV
+    USBDevice.attach();
+    #endif
     delay(500);
     Serial.println("wake due to interrupt");
     Serial.println();
