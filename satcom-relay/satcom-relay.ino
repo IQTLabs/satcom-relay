@@ -144,7 +144,7 @@ void sleepCheck() {
     #ifdef WINDOWS_DEV
     USBDevice.attach();
     #endif
-    delay(500);
+    delay(1000);
     Serial.println("wake due to interrupt");
     Serial.println();
     // request repeat of last message.
