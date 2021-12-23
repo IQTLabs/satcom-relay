@@ -3,15 +3,17 @@
 
 SATCOMRelay relay;
 
+#define interruptPin 15
 const char fwVersion[] = "1.0.0";
-uint32_t gpsTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
-volatile uint32_t awakeTimer = 0;
-byte i = 0;
 const byte readBufferSize = 150;
 const byte jsonBufferSize = 200;
+const byte wakeupRetries = 30;
+
+volatile uint32_t awakeTimer, gpsTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
+byte i = 0;
 char readBuffer[readBufferSize] = {0};
-DynamicJsonDocument doc(jsonBufferSize);
 bool iridium_wakeup_state = false;
+DynamicJsonDocument doc(jsonBufferSize);
 
 Uart IridiumInterfaceSerial (&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
 
@@ -19,8 +21,6 @@ void SERCOM1_Handler()
 {
   IridiumInterfaceSerial.IrqHandler();
 }
-
-#define interruptPin 15
 
 unsigned long timeDiff(unsigned long x, unsigned long nowTime) {
   if (nowTime >= x) {
@@ -31,6 +31,16 @@ unsigned long timeDiff(unsigned long x, unsigned long nowTime) {
 
 unsigned long nowTimeDiff(unsigned long x) {
   return timeDiff(x, millis());
+}
+
+bool timeExpired(volatile unsigned long *x, unsigned long interval, bool reset) {
+  if (nowTimeDiff(*x) > interval) {
+    if (reset) {
+      *x = millis();
+    }
+    return true;
+  }
+  return false;
 }
 
 void setup() {
@@ -59,15 +69,14 @@ void setup() {
 
 void loop() {
   msgCheck();
-  gpsCheck();
+  gpsCheck(false);
   batteryCheck();
   sleepCheck();
   ledBlinkCheck();
   iridiumInterfaceCheck();
 
   #if TEST_MODE // print the state of the relay
-  if (nowTimeDiff(testModePrintTimer) > TEST_MODE_PRINT_INTERVAL) {
-    testModePrintTimer = millis(); // reset the timer
+  if (timeExpired(&testModePrintTimer, TEST_MODE_PRINT_INTERVAL, true)) {
     relay.print();
     Serial.println();
   }
@@ -104,31 +113,31 @@ void msgCheck() {
 }
 
 // Periodically check the GPS for current position
-void gpsCheck() {
+bool gpsCheck(bool forceCheck) {
+  bool hasFix = false;
   relay.gps.readGPSSerial(); // we need to keep reading in main loop to keep GPS serial buffer clear
-  if (nowTimeDiff(gpsTimer) > GPS_WAKEUP_INTERVAL) {
+  if (forceCheck || timeExpired(&gpsTimer, GPS_WAKEUP_INTERVAL, false)) {
     relay.gps.gpsWakeup(); // wake up the GPS until we get a fix or timeout
-    // TODO: double check this timeout logic
-    if (relay.gps.gpsHasFix() || (nowTimeDiff(gpsTimer) > GPS_WAKEUP_INTERVAL+GPS_LOCK_TIMEOUT)) {
+    hasFix = relay.gps.gpsHasFix();
+    if (hasFix || timeExpired(&gpsTimer, GPS_WAKEUP_INTERVAL+GPS_LOCK_TIMEOUT, true)) {
       relay.gps.gpsStandby();
-      gpsTimer = millis(); // reset the timer
       #if DEBUG_MODE
       Serial.print("DEBUG: ");if (relay.gps.gpsHasFix()) {Serial.println("GOT GPS FIX");} else {Serial.println("GPS FIX TIMEOUT");}
       #endif
     }
   }
+  return hasFix;
 }
 
 // Periodically check the battery level and update member variable
 void batteryCheck() {
-  if (nowTimeDiff(batteryCheckTimer) > BATTERY_CHECK_INTERVAL) {
-    batteryCheckTimer = millis(); // reset the timer
+  if (timeExpired(&batteryCheckTimer, BATTERY_CHECK_INTERVAL, true)) {
     relay.checkBatteryVoltage();
   }
 }
 
 void sleepCheck() {
-  if (nowTimeDiff(awakeTimer) > AWAKE_INTERVAL) {
+  if (timeExpired(&awakeTimer, AWAKE_INTERVAL, true)) {
     // set pin mode to low
     digitalWrite(LED_BUILTIN, LOW);
     Serial.println("sleeping as timed out");
@@ -186,6 +195,14 @@ void handleReadBuffer() {
     Serial.println(error.c_str());
     doc.clear();
   } else {
+    bool isHeartbeat = doc.containsKey("heartbeat");
+    bool j = 0;
+    for (; j < wakeupRetries; ++j) {
+      if (gpsCheck(isHeartbeat)) {
+        break;
+      }
+      delay(1000);
+    }
     doc["uptime_ms"] = millis();
     doc["version"] = fwVersion;
     doc["lat"] = relay.gps.getLastFixLatitude();
@@ -194,6 +211,7 @@ void handleReadBuffer() {
     iridium_wakeup_state = !iridium_wakeup_state;
     digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
     serializeJson(doc, IridiumInterfaceSerial);
+    IridiumInterfaceSerial.println();
     serializeJson(doc, Serial);
     Serial.println();
   }
@@ -202,8 +220,7 @@ void handleReadBuffer() {
 
 // Blink to show the Relay MCU is awake
 void ledBlinkCheck() {
-  if (nowTimeDiff(ledBlinkTimer) > LED_BLINK_TIMER) {
-    ledBlinkTimer = millis(); // reset the timer
+  if (timeExpired(&ledBlinkTimer, LED_BLINK_TIMER, true)) {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
   }
 }
