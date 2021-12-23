@@ -32,19 +32,21 @@ The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://
 | ---------- | ------------ | ----- | ---- |
 | MCU | Feather M0 Basic Proto | $19.95 | https://www.adafruit.com/product/2772 |
 | GPS | Ultimate GPS FeatherWing | $24.95 | https://www.adafruit.com/product/3133 |
-| SatComProcessor | Feather M0 Adalogger | $19.95 | https://www.adafruit.com/product/2796 |
-| SatCom | RockBlock 9603N | $249.95 | https://www.adafruit.com/product/4521 |
+| SATCOM Interface MCU | Feather M0 Adalogger | $19.95 | https://www.adafruit.com/product/2796 |
+| Stacking Headers | Stacking Headers for Feather - 12-pin and 16-pin female headers | $1.25 | https://www.adafruit.com/product/2830 |
+| SATCOM Modem | RockBlock 9603N | $249.95 | https://www.adafruit.com/product/4521 |
 | PCB-A | Feather Quad Side-By-Side | $9.95 | https://www.adafruit.com/product/4254 |
 | PCB-B | RockBlock to Feather Adapter | --- | [Design Files](./electrical/IridiumPCB) |
 | Battery | Lithium Ion Battery Pack - 3.7V 6600mAh | $24.50 |  https://www.adafruit.com/product/353 |
 | GPS Battery | CR1220 Coin Cell Battery | $0.95 | https://www.adafruit.com/product/380 |
 | Sensor FeatherWing | FeatherWing Proto | $4.95 | https://www.adafruit.com/product/2884 |
-| Housing - Dry Box Case | SE 56 Micro | $26.00 | https://evergreencases.com/ |
-| Housing - Dry Box Screws | #4 - 3/8" high-low screws | TBD | TBD |
-| Housing - 3D Printed Case Chassis | STL | --- | [Hardware](./hardware) |
-| Housing - Threaded Inserts | 1.5mm | TBD | TBD |
-| Housing - Mounting Screws | 1.5mm | TBD | TBD |
-
+| Micro SD Card | Micro SD Card | --- | --- |
+| Dry Box Case | SE 56 Micro | $26.00 | https://evergreencases.com/ |
+| Dry Box Screws | Rounded Head Thread-Forming Screws for Brittle Plastic, 18-8 Stainless Steel, Number 4 Size, 3/8" Long | --- | https://www.mcmaster.com/97349A100/ |
+| 3D Printed Case Chassis | STL | --- | [Hardware](./hardware) |
+| Threaded Inserts | Tapered Heat-Set Inserts for Plastic Brass, M2.5 x 0.45 mm Thread Size, 3.4 mm Installed Length | --- | https://www.mcmaster.com/94180A321/ |
+| Mounting Screws | Button Head Hex Drive Screw Passivated 18-8 Stainless Steel, M2.5 x 0.45 mm Thread, 4mm Long | --- | https://www.mcmaster.com/92095A456/ |
+| Mounting Screws | Button Head Hex Drive Screw 18-8 Stainless Steel, M2.5 x 0.45 Thread Size, 20mm Long | --- | https://www.mcmaster.com/92095A115/ |
 
 ## Operations
 
