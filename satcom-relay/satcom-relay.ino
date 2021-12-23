@@ -212,6 +212,9 @@ void handleReadBuffer() {
     doc["bat"] = relay.getBatteryVoltage();
     iridium_wakeup_state = !iridium_wakeup_state;
     digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
+    // Give the modem a chance to wakeup to receive the message.
+    // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
+    delay(1000);
     serializeJson(doc, IridiumInterfaceSerial);
     IridiumInterfaceSerial.println();
     serializeJson(doc, Serial);
