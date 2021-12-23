@@ -7,6 +7,7 @@ SATCOMRelay relay;
 const char fwVersion[] = "1.0.0";
 const byte readBufferSize = 150;
 const byte jsonBufferSize = 200;
+const byte wakeupRetries = 30;
 
 volatile uint32_t awakeTimer, gpsTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
 byte i = 0;
@@ -112,18 +113,20 @@ void msgCheck() {
 }
 
 // Periodically check the GPS for current position
-void gpsCheck(bool forceCheck) {
+bool gpsCheck(bool forceCheck) {
+  bool hasFix = false;
   relay.gps.readGPSSerial(); // we need to keep reading in main loop to keep GPS serial buffer clear
   if (forceCheck || timeExpired(&gpsTimer, GPS_WAKEUP_INTERVAL, false)) {
     relay.gps.gpsWakeup(); // wake up the GPS until we get a fix or timeout
-    // TODO: double check this timeout logic
-    if (relay.gps.gpsHasFix() || timeExpired(&gpsTimer, GPS_WAKEUP_INTERVAL+GPS_LOCK_TIMEOUT, true)) {
+    hasFix = relay.gps.gpsHasFix();
+    if (hasFix || timeExpired(&gpsTimer, GPS_WAKEUP_INTERVAL+GPS_LOCK_TIMEOUT, true)) {
       relay.gps.gpsStandby();
       #if DEBUG_MODE
       Serial.print("DEBUG: ");if (relay.gps.gpsHasFix()) {Serial.println("GOT GPS FIX");} else {Serial.println("GPS FIX TIMEOUT");}
       #endif
     }
   }
+  return hasFix;
 }
 
 // Periodically check the battery level and update member variable
@@ -193,7 +196,13 @@ void handleReadBuffer() {
     doc.clear();
   } else {
     bool isHeartbeat = doc.containsKey("heartbeat");
-    gpsCheck(isHeartbeat);
+    bool j = 0;
+    for (; j < wakeupRetries; ++j) {
+      if (gpsCheck(isHeartbeat)) {
+        break;
+      }
+      delay(1000);
+    }
     doc["uptime_ms"] = millis();
     doc["version"] = fwVersion;
     doc["lat"] = relay.gps.getLastFixLatitude();
