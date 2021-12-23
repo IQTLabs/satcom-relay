@@ -36,8 +36,14 @@ The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://
 | SatCom | RockBlock 9603N | $249.95 | https://www.adafruit.com/product/4521 |
 | PCB-A | Feather Quad Side-By-Side | $9.95 | https://www.adafruit.com/product/4254 |
 | PCB-B | RockBlock to Feather Adapter | --- | [Design Files](./electrical/IridiumPCB) |
-| Battery | 2500mAh LiPo Battery | $14.95 | https://www.adafruit.com/product/328 |
+| Battery | Lithium Ion Battery Pack - 3.7V 6600mAh | $24.50 |  https://www.adafruit.com/product/353 |
 | GPS Battery | CR1220 Coin Cell Battery | $0.95 | https://www.adafruit.com/product/380 |
+| Sensor FeatherWing | FeatherWing Proto | $4.95 | https://www.adafruit.com/product/2884 |
+| Housing - Dry Box Case | SE 56 Micro | $26.00 | https://evergreencases.com/ |
+| Housing - Dry Box Screws | #4 - 3/8" high-low screws | TBD | TBD |
+| Housing - 3D Printed Case Chassis | STL | --- | [Hardware](./hardware) |
+| Housing - Threaded Inserts | 1.5mm | TBD | TBD |
+| Housing - Mounting Screws | 1.5mm | TBD | TBD |
 
 
 ## Operations
