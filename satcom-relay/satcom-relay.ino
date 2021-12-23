@@ -196,12 +196,14 @@ void handleReadBuffer() {
     doc.clear();
   } else {
     bool isHeartbeat = doc.containsKey("heartbeat");
-    bool j = 0;
-    for (; j < wakeupRetries; ++j) {
-      if (gpsCheck(isHeartbeat)) {
-        break;
+    if (isHeartbeat) {
+      byte j = 0;
+      for (; j < wakeupRetries; ++j) {
+        if (gpsCheck(true)) {
+          break;
+        }
+        delay(1000);
       }
-      delay(1000);
     }
     doc["uptime_ms"] = millis();
     doc["version"] = fwVersion;
