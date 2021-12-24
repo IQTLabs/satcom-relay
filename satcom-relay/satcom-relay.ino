@@ -5,8 +5,8 @@ SATCOMRelay relay;
 
 #define interruptPin 15
 const char fwVersion[] = "1.0.0";
-const byte readBufferSize = 255;
-const int jsonBufferSize = 384;
+const byte readBufferSize = 184;
+const int jsonBufferSize = 256;
 const byte wakeupRetries = 30;
 
 volatile uint32_t awakeTimer, gpsTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
