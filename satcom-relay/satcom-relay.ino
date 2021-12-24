@@ -5,7 +5,7 @@ SATCOMRelay relay;
 
 #define interruptPin 15
 const char fwVersion[] = "1.0.0";
-const byte readBufferSize = 150;
+const byte readBufferSize = 255;
 const int jsonBufferSize = 384;
 const byte wakeupRetries = 30;
 
@@ -215,10 +215,9 @@ void handleReadBuffer() {
     // Give the modem a chance to wakeup to receive the message.
     // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
     delay(1000);
-    serializeJson(doc, IridiumInterfaceSerial);
-    IridiumInterfaceSerial.println();
-    serializeJson(doc, Serial);
-    Serial.println();
+    serializeJson(doc, readBuffer, sizeof(readBuffer));
+    IridiumInterfaceSerial.println(readBuffer);
+    Serial.println(readBuffer);
   }
   memset(readBuffer, 0, sizeof(readBuffer));
 }
