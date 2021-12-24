@@ -4,7 +4,7 @@
 SATCOMRelay relay;
 
 #define interruptPin 15
-const char fwVersion[] = "1.0.0";
+const char fwVersion[] = "2";
 const byte readBufferSize = 184;
 const int jsonBufferSize = 256;
 const byte wakeupRetries = 30;
@@ -196,7 +196,7 @@ void handleReadBuffer() {
     Serial.println(error.c_str());
     doc.clear();
   } else {
-    bool isHeartbeat = doc.containsKey("heartbeat");
+    bool isHeartbeat = doc.containsKey("H");
     if (isHeartbeat) {
       byte j = 0;
       for (; j < wakeupRetries; ++j) {
@@ -206,8 +206,8 @@ void handleReadBuffer() {
         delay(1000);
       }
     }
-    doc["uptime_ms"] = millis();
-    doc["version"] = fwVersion;
+    doc["u_ms"] = millis();
+    doc["v"] = fwVersion;
     doc["lat"] = relay.gps.getLastFixLatitude();
     doc["lon"] = relay.gps.getLastFixLongitude();
     doc["bat"] = relay.getBatteryVoltage();
