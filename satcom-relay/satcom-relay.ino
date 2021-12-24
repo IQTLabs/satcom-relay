@@ -6,14 +6,12 @@ SATCOMRelay relay;
 #define interruptPin 15
 const char fwVersion[] = "1.0.0";
 const byte readBufferSize = 184;
-const byte writeBufferSize = 184;
 const int jsonBufferSize = 256;
 const byte wakeupRetries = 30;
 
 volatile uint32_t awakeTimer, gpsTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
 byte i = 0;
 char readBuffer[readBufferSize] = {0};
-char writeBuffer[writeBufferSize] = {0};
 bool iridium_wakeup_state = false;
 DynamicJsonDocument doc(jsonBufferSize);
 
@@ -191,7 +189,8 @@ bool getSerial1() {
 
 void handleReadBuffer() {
   doc.clear();
-  DeserializationError error = deserializeJson(doc, readBuffer);
+  // https://arduinojson.org/v6/issues/garbage-out/
+  DeserializationError error = deserializeJson(doc, (const char*)readBuffer);
   if (error) {
     Serial.print("FAILED: trying to parse JSON: ");
     Serial.println(error.c_str());
@@ -217,9 +216,10 @@ void handleReadBuffer() {
     // Give the modem a chance to wakeup to receive the message.
     // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
     delay(1000);
-    serializeJson(doc, writeBuffer, sizeof(writeBuffer));
-    IridiumInterfaceSerial.println(writeBuffer);
-    Serial.println(writeBuffer);
+    serializeJson(doc, IridiumInterfaceSerial);
+    serializeJson(doc, Serial);
+    IridiumInterfaceSerial.println();
+    Serial.println();
   }
   memset(readBuffer, 0, sizeof(readBuffer));
 }
