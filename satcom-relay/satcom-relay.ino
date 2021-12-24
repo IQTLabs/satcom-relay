@@ -196,30 +196,36 @@ void handleReadBuffer() {
     Serial.println(error.c_str());
     doc.clear();
   } else {
-    bool isHeartbeat = doc.containsKey("H");
-    if (isHeartbeat) {
-      byte j = 0;
-      for (; j < wakeupRetries; ++j) {
-        if (gpsCheck(true)) {
-          break;
+    bool isDevice = doc.containsKey("D");
+    if (!isDevice) {
+      Serial.print("Ignoring message without device key");
+      doc.clear();
+    } else {
+      bool isHeartbeat = doc.containsKey("H");
+      if (isHeartbeat) {
+        byte j = 0;
+        for (; j < wakeupRetries; ++j) {
+          if (gpsCheck(true)) {
+            break;
+          }
+          delay(1000);
         }
-        delay(1000);
       }
+      doc["u_ms"] = millis();
+      doc["v"] = fwVersion;
+      doc["lat"] = relay.gps.getLastFixLatitude();
+      doc["lon"] = relay.gps.getLastFixLongitude();
+      doc["bat"] = relay.getBatteryVoltage();
+      iridium_wakeup_state = !iridium_wakeup_state;
+      digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
+      // Give the modem a chance to wakeup to receive the message.
+      // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
+      delay(1000);
+      serializeJson(doc, IridiumInterfaceSerial);
+      serializeJson(doc, Serial);
+      IridiumInterfaceSerial.println();
+      Serial.println();
     }
-    doc["u_ms"] = millis();
-    doc["v"] = fwVersion;
-    doc["lat"] = relay.gps.getLastFixLatitude();
-    doc["lon"] = relay.gps.getLastFixLongitude();
-    doc["bat"] = relay.getBatteryVoltage();
-    iridium_wakeup_state = !iridium_wakeup_state;
-    digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
-    // Give the modem a chance to wakeup to receive the message.
-    // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
-    delay(1000);
-    serializeJson(doc, IridiumInterfaceSerial);
-    serializeJson(doc, Serial);
-    IridiumInterfaceSerial.println();
-    Serial.println();
   }
   memset(readBuffer, 0, sizeof(readBuffer));
 }
