@@ -9,10 +9,11 @@ const byte readBufferSize = 184;
 const int jsonBufferSize = 256;
 const byte wakeupRetries = 30;
 
-volatile uint32_t awakeTimer, gpsTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
+volatile uint32_t awakeTimer, gpsTimer, gpsBootTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
 byte i = 0;
 char readBuffer[readBufferSize] = {0};
 bool iridium_wakeup_state = false;
+bool hasFixOnBoot = false;
 DynamicJsonDocument doc(jsonBufferSize);
 
 Uart IridiumInterfaceSerial (&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
@@ -69,7 +70,13 @@ void setup() {
 
 void loop() {
   msgCheck();
-  gpsCheck(false);
+  // wait for a warm fix on boot
+  if (!hasFixOnBoot && !timeExpired(&gpsBootTimer, GPS_BOOT_TIMEOUT, true)) {
+    hasFixOnBoot = gpsCheck(true);
+  } else { // got a fix or timed out
+    hasFixOnBoot = true;
+    gpsCheck(false);
+  }
   batteryCheck();
   sleepCheck();
   ledBlinkCheck();
@@ -137,7 +144,7 @@ void batteryCheck() {
 }
 
 void sleepCheck() {
-  if (timeExpired(&awakeTimer, AWAKE_INTERVAL, true)) {
+  if (hasFixOnBoot && timeExpired(&awakeTimer, AWAKE_INTERVAL, true)) {
     // set pin mode to low
     digitalWrite(LED_BUILTIN, LOW);
     Serial.println("sleeping as timed out");

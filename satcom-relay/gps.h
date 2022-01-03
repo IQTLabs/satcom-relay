@@ -13,6 +13,7 @@
 
 #define GPS_WAKEUP_INTERVAL (60*60*1000)
 #define GPS_LOCK_TIMEOUT 60000
+#define GPS_BOOT_TIMEOUT (60000*5)
 
 enum GPSState{NOT_SET, STANDBY, WAKEUP};
 const char * const gpsStateStrings[] = { "NOT_SET", "STANDBY", "WAKEUP" };
