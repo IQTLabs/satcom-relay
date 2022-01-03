@@ -164,7 +164,8 @@ void sleepCheck() {
     Serial.println("wake due to interrupt");
     Serial.println();
     // request repeat of last message.
-    Serial1.println();
+    // commenting out as it seems to have enough time to wake
+    // Serial1.println();
     // toggle output of built-in LED pin
     digitalWrite(LED_BUILTIN, HIGH);
   }
