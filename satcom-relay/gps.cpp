@@ -1,19 +1,12 @@
 #include "gps.h"
 
-Uart GPSSerial(&sercom2, GPS_RX_PIN, GPS_TX_PIN, SERCOM_RX_PAD_3, UART_TX_PAD_0);
-void SERCOM2_Handler()
-{
-  GPSSerial.IrqHandler();
-}
+#define GPSSerial Serial1
 
 int GPS::initGPS() {
   Adafruit_GPS temp_adafruitGPS(&GPSSerial);
   adafruitGPS = temp_adafruitGPS;
 
   adafruitGPS.begin(9600);
-  // Assign pins 10 & 11 SERCOM functionality
-  pinPeripheral(GPS_RX_PIN, PIO_SERCOM);
-  pinPeripheral(GPS_TX_PIN, PIO_SERCOM);
   
   // Use init parameters from GPS library example
   adafruitGPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
