@@ -204,12 +204,12 @@ void handleReadBuffer() {
     Serial.println(error.c_str());
     doc.clear();
   } else {
-    bool isDevice = doc.containsKey("D");
+    bool isDevice = doc.containsKey("D") || doc.containsKey("device");
     if (!isDevice) {
       Serial.print("Ignoring message without device key");
       doc.clear();
     } else {
-      bool isHeartbeat = doc.containsKey("H");
+      bool isHeartbeat =  doc.containsKey("H") || doc.containsKey("heartbeat");
       if (isHeartbeat) {
         byte j = 0;
         for (; j < wakeupRetries; ++j) {
@@ -256,6 +256,6 @@ void iridiumInterfaceCheck() {
   if (sawNewline) {
     Serial.println("Received newline/resend request from Iridium Interface");
     // TODO check this before sending
-    serializeJson(doc, IridiumInterfaceSerial);
+    //serializeJson(doc, IridiumInterfaceSerial);
   }
 }
