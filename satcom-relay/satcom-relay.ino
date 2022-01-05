@@ -23,6 +23,13 @@ void SERCOM1_Handler()
   IridiumInterfaceSerial.IrqHandler();
 }
 
+Uart SensorSerial(&sercom2, SENSOR_RX_PIN, SENSOR_TX_PIN, SENSOR_RX_PAD, SENSOR_TX_PAD);
+
+void SERCOM2_Handler()
+{
+  SensorSerial.IrqHandler();
+}
+
 unsigned long timeDiff(unsigned long x, unsigned long nowTime) {
   if (nowTime >= x) {
     return nowTime - x;
@@ -52,15 +59,19 @@ void setup() {
 
   // message connection
   memset(readBuffer, 0, sizeof(readBuffer));
-  Serial1.begin(57600);
+  SensorSerial.begin(57600);
 
   IridiumInterfaceSerial.begin(57600);
 
   pinMode(LED_BUILTIN, OUTPUT);
 
-  // Assign pins 10 & 11 SERCOM functionality
+  // Assign IRIDIUM_INTERFACE pins SERCOM functionality
   pinPeripheral(IRIDIUM_INTERFACE_RX_PIN, PIO_SERCOM);
   pinPeripheral(IRIDIUM_INTERFACE_TX_PIN, PIO_SERCOM);
+
+  // Assign SENSOR pins SERCOM functionality
+  pinPeripheral(SENSOR_RX_PIN, PIO_SERCOM);
+  pinPeripheral(SENSOR_TX_PIN, PIO_SERCOM);
 
   relay.gps.initGPS();
 
@@ -113,8 +124,8 @@ void setupInterruptSleep() {
 }
 
 void msgCheck() {
-  // Read from Serial1
-  if (getSerial1()) {
+  // Read from SensorSerial
+  if (getSensorSerial()) {
     handleReadBuffer();
   }
 }
@@ -165,7 +176,7 @@ void sleepCheck() {
     Serial.println();
     // request repeat of last message.
     // commenting out as it seems to have enough time to wake
-    // Serial1.println();
+    // SensorSerial.println();
     // toggle output of built-in LED pin
     digitalWrite(LED_BUILTIN, HIGH);
   }
@@ -175,9 +186,10 @@ void EIC_ISR(void) {
   awakeTimer = millis(); // refresh awake timer.
 }
 
-bool getSerial1() {
-  if (Serial1.available()) {
-    char c = Serial1.read();
+bool getSensorSerial() {
+  if (SensorSerial.available()) {
+    char c = SensorSerial.read();
+    Serial.print(c);
     if (i == (sizeof(readBuffer) - 1)) {
       c = 0;
     }
@@ -187,6 +199,7 @@ bool getSerial1() {
     readBuffer[i] = c;
     if (c == 0) {
       i = 0;
+      Serial.println();
       return true;
     } else {
       ++i;
@@ -204,12 +217,12 @@ void handleReadBuffer() {
     Serial.println(error.c_str());
     doc.clear();
   } else {
-    bool isDevice = doc.containsKey("D");
+    bool isDevice = doc.containsKey("D") || doc.containsKey("device");
     if (!isDevice) {
       Serial.print("Ignoring message without device key");
       doc.clear();
     } else {
-      bool isHeartbeat = doc.containsKey("H");
+      bool isHeartbeat =  doc.containsKey("H") || doc.containsKey("heartbeat");
       if (isHeartbeat) {
         byte j = 0;
         for (; j < wakeupRetries; ++j) {
@@ -256,6 +269,6 @@ void iridiumInterfaceCheck() {
   if (sawNewline) {
     Serial.println("Received newline/resend request from Iridium Interface");
     // TODO check this before sending
-    serializeJson(doc, IridiumInterfaceSerial);
+    //serializeJson(doc, IridiumInterfaceSerial);
   }
 }

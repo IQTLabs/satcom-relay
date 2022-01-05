@@ -8,8 +8,6 @@
 //#define GPS_DEBUG false
 
 #define GPS_EN_PIN 14 //A0
-#define GPS_RX_PIN 5
-#define GPS_TX_PIN 22
 
 #define GPS_WAKEUP_INTERVAL (60*60*1000)
 #define GPS_LOCK_TIMEOUT 60000
