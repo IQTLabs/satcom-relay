@@ -71,10 +71,11 @@ void setup() {
 void loop() {
   msgCheck();
   // wait for a warm fix on boot
-  if (!hasFixOnBoot && !timeExpired(&gpsBootTimer, GPS_BOOT_TIMEOUT, true)) {
+  if (hasFixOnBoot) {
+    relay.gps.gpsStandby();
+  } else if (!hasFixOnBoot && !timeExpired(&gpsBootTimer, GPS_BOOT_TIMEOUT, true)) {
     hasFixOnBoot = gpsCheck(true);
-  } else { // got a fix or timed out
-    hasFixOnBoot = true;
+  } else {
     gpsCheck(false);
   }
   batteryCheck();
