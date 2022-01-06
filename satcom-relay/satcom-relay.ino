@@ -14,6 +14,7 @@ byte i = 0;
 char readBuffer[readBufferSize] = {0};
 bool iridium_wakeup_state = false;
 bool hasFixOnBoot = false;
+bool gpsBooted = false;
 DynamicJsonDocument doc(jsonBufferSize);
 
 Uart IridiumInterfaceSerial (&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
@@ -73,10 +74,12 @@ void loop() {
   // wait for a warm fix on boot
   if (hasFixOnBoot) {
     relay.gps.gpsStandby();
+    gpsBooted = true;
   } else if (!hasFixOnBoot && !timeExpired(&gpsBootTimer, GPS_BOOT_TIMEOUT, true)) {
     hasFixOnBoot = gpsCheck(true);
   } else {
     gpsCheck(false);
+    gpsBooted = true;
   }
   batteryCheck();
   sleepCheck();
@@ -145,7 +148,7 @@ void batteryCheck() {
 }
 
 void sleepCheck() {
-  if (hasFixOnBoot && timeExpired(&awakeTimer, AWAKE_INTERVAL, true)) {
+  if ((hasFixOnBoot || gpsBooted) && timeExpired(&awakeTimer, AWAKE_INTERVAL, true)) {
     // set pin mode to low
     digitalWrite(LED_BUILTIN, LOW);
     Serial.println("sleeping as timed out");
