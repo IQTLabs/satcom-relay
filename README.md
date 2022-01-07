@@ -21,6 +21,8 @@ A SATCOM platform for relaying messages in remote locations.  This project provi
 
 ![fritzing](fritzing/satcom-relay_bb.png)
 
+*Note on connecting AdaLogger Feather and LoRa Feather: Only pins with indicated wires should be connected to quadrupler. All others should be removed or folded out of the way.
+
 ### Architecture Diagram
 
 ![architecture](assets/architecture.jpg)
