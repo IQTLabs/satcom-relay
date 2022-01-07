@@ -1,16 +1,15 @@
 # Satellite Communication Relay
 
-A SATCOM platform for relaying messages in remote locations.  This project provides a standard interface for messages to be relayed over a Satcom link.  Initially, this is  using the RockBlock Iridium 9603 satellite modem, but the system is designed to be able to handle any other satcom system designed for small burst data transmissions.
-
 ## About
 
-## Environment Setup
+A SATCOM platform for relaying messages in remote locations.  This project provides a standard interface for messages to be relayed over a Satcom link.  Initially, this is  using the RockBlock Iridium 9603 satellite modem, but the system is designed to be able to handle any other satcom system designed for small burst data transmissions.
 
-The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports/creating-a-new-serial).
+## System Design
 
 ### Board
 
 - Adafruit Feather M0 Basic [(diagram)](https://cdn-learn.adafruit.com/assets/assets/000/046/244/original/adafruit_products_Feather_M0_Basic_Proto_v2.2-1.png?1504885373)
+    - The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports/creating-a-new-serial).
 
 ### Arduino Libraries
 
@@ -22,10 +21,13 @@ The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://
 
 ![fritzing](fritzing/satcom-relay_bb.png)
 
-
 ### Architecture Diagram
 
 ![architecture](assets/architecture.jpg)
+
+### Hardware Assembly
+
+![hardware-collapse-animation.gif](assets/hardware-collapse-animation.gif)
 
 ### Bill of Materials
 | Short Name | Product Name | Price | Link |
@@ -43,13 +45,13 @@ The M0 was chosen as the Relay MCU because of its [6 SERCOM interfaces](https://
 | Micro SD Card | Micro SD Card | --- | --- |
 | Dry Box Case | SE 56 Micro | $26.00 | https://evergreencases.com/ |
 | Dry Box Screws | Rounded Head Thread-Forming Screws for Brittle Plastic, 18-8 Stainless Steel, Number 4 Size, 3/8" Long | --- | https://www.mcmaster.com/97349A100/ |
-| 3D Printed Case Chassis | STL | --- | [Hardware](./hardware) |
+| 3D Printed Case Chassis | SE56-chassis.STL | --- | [SE56-chassis.STL](./hardware/SE56-chassis.STL) |
 | Threaded Inserts | Tapered Heat-Set Inserts for Plastic Brass, M2.5 x 0.45 mm Thread Size, 3.4 mm Installed Length | --- | https://www.mcmaster.com/94180A321/ |
 | Mounting Screws | Button Head Hex Drive Screw Passivated 18-8 Stainless Steel, M2.5 x 0.45 mm Thread, 4mm Long | --- | https://www.mcmaster.com/92095A456/ |
 | Mounting Screws | Button Head Hex Drive Screw 18-8 Stainless Steel, M2.5 x 0.45 Thread Size, 20mm Long | --- | https://www.mcmaster.com/92095A115/ |
 
 ## Operations
 
-The M0 uses Serial1 (RX0 and TX1) to listen for JSON messages from other devices. These messages then get additional keys added (`uptime_ms` and `version`) and then logged out the console.
+The M0 uses SERCOM2 (RX pin 5 and TX pin 22) to listen for JSON messages from other devices. These messages then get additional keys added (`uptime_ms` and `version`) and then logged out the console.
 
 The M0 will automatically go to sleep after `AWAKE_INTERVAL` (1 minute) if the interrupt pin (A1) hasn't been toggled. Every time the interrupt pin is toggled the `awakeTimer` is reset and the count towards `AWAKE_INTERVAL` starts over. When in sleep mode, toggling the interrupt pin will wake up the M0 again.
