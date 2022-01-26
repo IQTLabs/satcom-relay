@@ -3,6 +3,11 @@
 
 SATCOMRelay relay;
 
+
+// Ensure MISO/MOSI/SCK pins are not connected to the port replicator board
+#include "messagelog.h"
+MessageLog *sentMessageLog;
+
 #define interruptPin 15
 const char fwVersion[] = "2";
 const byte readBufferSize = 184;
@@ -57,6 +62,35 @@ void setup() {
   digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
 
   Serial.begin(115200);
+
+  // Setup SD card pins
+  pinMode(SDCardCSPin, OUTPUT);
+  pinMode(SDCardDetectPin, INPUT_PULLUP);
+  #if SDCARD_ENABLE_LED
+  pinMode(SDCardActivityLEDPin, OUTPUT);
+  #endif
+
+  // Initialize SD card interface
+  #if SDCARD_ENABLE_LED
+  digitalWrite(SDCardActivityLEDPin, HIGH);
+  #endif
+  Serial.print(F("Initializing SD card interface..."));
+  while (digitalRead(SDCardDetectPin) == LOW) {
+    Serial.println(F("SD card not inserted. Waiting."));
+    delay(1000);
+  }
+  while (!SD.begin(SDCardCSPin)) {
+    Serial.println(F("Error initializing SD card interface. Retrying."));
+    delay(1000);
+  }
+
+  #if SDCARD_ENABLE_LED
+  digitalWrite(SDCardActivityLEDPin, LOW);
+  #endif
+  Serial.println(F("success"));
+
+  // Initialize sent message log
+  sentMessageLog = new MessageLog("sent.txt", SDCardCSPin, SDCardDetectPin, SDCardActivityLEDPin);
 
   // message connection
   memset(readBuffer, 0, sizeof(readBuffer));
@@ -243,13 +277,14 @@ void handleReadBuffer() {
       doc["bat"] = relay.getBatteryVoltage();
       iridium_wakeup_state = !iridium_wakeup_state;
       digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
+      String message = "";
+      serializeJson(doc, message);
+      sentMessageLog->push(&message);
       // Give the modem a chance to wakeup to receive the message.
       // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
       delay(1000);
-      serializeJson(doc, IridiumInterfaceSerial);
-      serializeJson(doc, Serial);
-      IridiumInterfaceSerial.println();
-      Serial.println();
+      IridiumInterfaceSerial.println(message);
+      Serial.println(message);
     }
   }
   memset(readBuffer, 0, sizeof(readBuffer));

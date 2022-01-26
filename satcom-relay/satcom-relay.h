@@ -6,6 +6,11 @@
 
 #define WINDOWS_DEV
 
+#define SDCARD_ENABLE_LED true
+#define SDCardCSPin 4
+#define SDCardDetectPin 7
+#define SDCardActivityLEDPin (SDCARD_ENABLE_LED ? 8 : -1)
+
 #define TEST_MODE true
 #define TEST_MODE_PRINT_INTERVAL 2000 // use for testing. prints relay status to Serial
 
