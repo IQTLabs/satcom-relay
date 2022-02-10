@@ -221,12 +221,12 @@ void handleReadBuffer() {
     Serial.println(error.c_str());
     doc.clear();
   } else {
-    bool isDevice = doc.containsKey("D") || doc.containsKey("device");
+    bool isDevice = doc.containsKey("D");
     if (!isDevice) {
       Serial.print("Ignoring message without device key");
       doc.clear();
     } else {
-      bool isHeartbeat =  doc.containsKey("H") || doc.containsKey("heartbeat");
+      bool isHeartbeat =  doc.containsKey("H");
       if (isHeartbeat) {
         byte j = 0;
         for (; j < wakeupRetries; ++j) {
