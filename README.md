@@ -6,6 +6,10 @@ A SATCOM platform for relaying messages in remote locations.  This project provi
 
 ## System Design
 
+### Architecture Diagram
+
+![architecture](assets/architecture.jpg)
+
 ### Relay MCU
 
 - Adafruit Feather M0 Basic [(diagram)](https://cdn-learn.adafruit.com/assets/assets/000/046/244/original/adafruit_products_Feather_M0_Basic_Proto_v2.2-1.png?1504885373)
@@ -15,11 +19,6 @@ A SATCOM platform for relaying messages in remote locations.  This project provi
 - Adafruit Feather M0 Adalogger [(diagram)](https://cdn-learn.adafruit.com/assets/assets/000/107/293/original/adafruit_products_Adafruit_Feather_M0_Adalogger_Pinout.png?1639414889)
 - Firmware: https://github.com/IQTLabs/satcom-modem-interface
 
-### Arduino Libraries
-
-- Adafruit GPS Library by Adafruit
-- IridiumSBDi2c by SparkFun Electronics [(datasheet)](https://docs.rockblock.rock7.com/docs/connectors)
-- ArduinoJson by Benoit Blanchon
 
 ### Wiring Diagram
 
@@ -27,9 +26,22 @@ A SATCOM platform for relaying messages in remote locations.  This project provi
 
 *Note on connecting AdaLogger Feather and LoRa Feather: Only pins with indicated wires should be connected to quadrupler. All others should be removed or folded out of the way.
 
-### Architecture Diagram
+### Arduino Setup / Flashing
 
-![architecture](assets/architecture.jpg)
+1. Install Arduinu IDE
+2. Install Arduino **Adafruit M0 SAMD21** Board
+![fritzing](assets/arduino-board-setup.png)
+3. Install Arduino Libraries
+    - **Adafruit GPS Library** by Adafruit
+    - **IridiumSBDi2c** by SparkFun Electronics [(datasheet)](https://docs.rockblock.rock7.com/docs/connectors)
+    - **ArduinoJson** by Benoit Blanchon
+4. Clone / download repository, open .ino file, and flash to MCU
+    - Relay MCU
+        - satcom-relay.ino
+        - **Adafruit Feather M0**
+    - Modem Interface MCU
+        - satcom-modem-interface.ino*
+        - **Adafruit Feather M0 AdaLogger**
 
 ### Hardware Assembly
 
