@@ -1,6 +1,14 @@
 #include <ArduinoJson.h>
 #include "satcom-relay.h"
 
+#define SDCARD_ENABLE_LED true
+
+// Ensure MISO/MOSI/SCK pins are not connected to the port replicator board
+#include "messagelog.h"
+MessageLog *sentMessageLog;
+const size_t messageBufferSize = 1024;
+char messageBuffer[messageBufferSize];
+
 SATCOMRelay relay;
 
 #define interruptPin 15
@@ -53,6 +61,8 @@ bool timeExpired(volatile unsigned long *x, unsigned long interval, bool reset) 
 }
 
 void setup() {
+  sentMessageLog = new MessageLog("sent.txt", SDCardCSPin, SDCardDetectPin, SDCardActivityLEDPin);
+
   pinMode(IRIDIUM_INTERFACE_WAKEUP_PIN, OUTPUT);
   digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
 
@@ -243,13 +253,17 @@ void handleReadBuffer() {
       doc["bat"] = relay.getBatteryVoltage();
       iridium_wakeup_state = !iridium_wakeup_state;
       digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
+      size_t docSize = measureJson(doc);
+      serializeJson(doc, &messageBuffer, docSize);
+      if (sentMessageLog->append(messageBuffer) < docSize) {
+        Serial.println(F("Error from sentMessageLog->append()"));
+      }
       // Give the modem a chance to wakeup to receive the message.
       // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
       delay(1000);
-      serializeJson(doc, IridiumInterfaceSerial);
-      serializeJson(doc, Serial);
-      IridiumInterfaceSerial.println();
-      Serial.println();
+      IridiumInterfaceSerial.println(messageBuffer);
+      Serial.println(messageBuffer);
+      memset(messageBuffer, 0, messageBufferSize);
     }
   }
   memset(readBuffer, 0, sizeof(readBuffer));
