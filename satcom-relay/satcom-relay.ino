@@ -17,19 +17,72 @@ bool hasFixOnBoot = false;
 bool gpsBooted = false;
 DynamicJsonDocument doc(jsonBufferSize);
 
-Uart IridiumInterfaceSerial (&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
+Uart IridiumInterfaceSerial(&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
+Uart SensorSerial(&sercom2, SENSOR_RX_PIN, SENSOR_TX_PIN, SENSOR_RX_PAD, SENSOR_TX_PAD);
 
 void SERCOM1_Handler()
 {
   IridiumInterfaceSerial.IrqHandler();
 }
 
-Uart SensorSerial(&sercom2, SENSOR_RX_PIN, SENSOR_TX_PIN, SENSOR_RX_PAD, SENSOR_TX_PAD);
-
 void SERCOM2_Handler()
 {
   SensorSerial.IrqHandler();
 }
+
+class IridiumModem
+{
+  public:
+    void begin(Uart *uart);
+    void wakeup();
+    void check();
+    void sendJSON(const DynamicJsonDocument &doc);
+    Uart *modemUart;
+  private:
+    bool wakeup_state;
+};
+
+void IridiumModem::begin(Uart *modemUart) {
+  this->modemUart = modemUart;
+  this->wakeup_state = false;
+  this->modemUart->begin(57600);
+
+  pinMode(IRIDIUM_INTERFACE_WAKEUP_PIN, OUTPUT);
+  digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, this->wakeup_state);
+  // Assign IRIDIUM_INTERFACE pins SERCOM functionality
+  pinPeripheral(IRIDIUM_INTERFACE_RX_PIN, PIO_SERCOM);
+  pinPeripheral(IRIDIUM_INTERFACE_TX_PIN, PIO_SERCOM);
+}
+
+void IridiumModem::wakeup() {
+   this->wakeup_state = !wakeup_state;
+   digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, this->wakeup_state);
+   // Give the modem a chance to wakeup to receive the message.
+   // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
+   delay(1000);
+}
+
+// If the Iridium Interface MCU misses the initial message because it was sleeping it will send a \n to request a resend
+void IridiumModem::check() {
+  bool sawNewline = false;
+  while (IridiumInterfaceSerial.available()) {
+    if (IridiumInterfaceSerial.read() == '\n') {
+      sawNewline = true;
+    }
+  }
+  if (sawNewline) {
+    Serial.println("Received newline/resend request from Iridium Interface");
+    // TODO check this before sending
+    //serializeJson(doc, IridiumInterfaceSerial);
+  }
+}
+
+void IridiumModem::sendJSON(const DynamicJsonDocument &doc) {
+   serializeJson(doc, *(this->modemUart));
+   this->modemUart->println();
+}
+
+IridiumModem modem;
 
 unsigned long timeDiff(unsigned long x, unsigned long nowTime) {
   if (nowTime >= x) {
@@ -53,22 +106,15 @@ bool timeExpired(volatile unsigned long *x, unsigned long interval, bool reset) 
 }
 
 void setup() {
-  pinMode(IRIDIUM_INTERFACE_WAKEUP_PIN, OUTPUT);
-  digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
-
   Serial.begin(115200);
 
   // message connection
   memset(readBuffer, 0, sizeof(readBuffer));
   SensorSerial.begin(57600);
 
-  IridiumInterfaceSerial.begin(57600);
-
   pinMode(LED_BUILTIN, OUTPUT);
 
-  // Assign IRIDIUM_INTERFACE pins SERCOM functionality
-  pinPeripheral(IRIDIUM_INTERFACE_RX_PIN, PIO_SERCOM);
-  pinPeripheral(IRIDIUM_INTERFACE_TX_PIN, PIO_SERCOM);
+  modem.begin(&IridiumInterfaceSerial);
 
   // Assign SENSOR pins SERCOM functionality
   pinPeripheral(SENSOR_RX_PIN, PIO_SERCOM);
@@ -95,7 +141,7 @@ void loop() {
   batteryCheck();
   sleepCheck();
   ledBlinkCheck();
-  iridiumInterfaceCheck();
+  modem.check();
 
   #if TEST_MODE // print the state of the relay
   if (timeExpired(&testModePrintTimer, TEST_MODE_PRINT_INTERVAL, true)) {
@@ -241,14 +287,9 @@ void handleReadBuffer() {
       doc["lat"] = relay.gps.getLastFixLatitude();
       doc["lon"] = relay.gps.getLastFixLongitude();
       doc["bat"] = relay.getBatteryVoltage();
-      iridium_wakeup_state = !iridium_wakeup_state;
-      digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
-      // Give the modem a chance to wakeup to receive the message.
-      // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
-      delay(1000);
-      serializeJson(doc, IridiumInterfaceSerial);
+      modem.wakeup();
+      modem.sendJSON(doc);
       serializeJson(doc, Serial);
-      IridiumInterfaceSerial.println();
       Serial.println();
     }
   }
@@ -259,20 +300,5 @@ void handleReadBuffer() {
 void ledBlinkCheck() {
   if (timeExpired(&ledBlinkTimer, LED_BLINK_TIMER, true)) {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-  }
-}
-
-// If the Iridium Interface MCU misses the initial message because it was sleeping it will send a \n to request a resend
-void iridiumInterfaceCheck() {
-  bool sawNewline = false;
-  while (IridiumInterfaceSerial.available()) {
-    if (IridiumInterfaceSerial.read() == '\n') {
-      sawNewline = true;
-    }
-  }
-  if (sawNewline) {
-    Serial.println("Received newline/resend request from Iridium Interface");
-    // TODO check this before sending
-    //serializeJson(doc, IridiumInterfaceSerial);
   }
 }
