@@ -1,16 +1,20 @@
 #include <ArduinoJson.h>
 #include "timediff.h"
+#include "sleepmanager.h"
 #include "satcom-relay.h"
 
 SATCOMRelay relay;
 
-#define interruptPin 15
 const char fwVersion[] = "2";
 const byte readBufferSize = 184;
 const int jsonBufferSize = 256;
 const byte wakeupRetries = 30;
 
-volatile uint32_t awakeTimer, gpsTimer, gpsBootTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
+#define interruptPin 15
+#define AWAKE_INTERVAL (60 * 1000)
+SleepManager sleepmanager(digitalPinToInterrupt(interruptPin), AWAKE_INTERVAL);
+
+volatile uint32_t gpsTimer, gpsBootTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
 byte i = 0;
 char readBuffer[readBufferSize] = {0};
 bool iridium_wakeup_state = false;
@@ -101,9 +105,6 @@ void setup() {
   pinPeripheral(SENSOR_TX_PIN, PIO_SERCOM);
 
   relay.gps.initGPS();
-
-  // Setup interrupt sleep pin
-  setupInterruptSleep();
 }
 
 void loop() {
@@ -129,28 +130,6 @@ void loop() {
     Serial.println();
   }
   #endif
-}
-
-void setupInterruptSleep() {
-  // whenever we get an interrupt, reset the awake clock.
-  attachInterrupt(digitalPinToInterrupt(interruptPin), EIC_ISR, CHANGE);
-  // Set external 32k oscillator to run when idle or sleep mode is chosen
-  SYSCTRL->XOSC32K.reg |=  (SYSCTRL_XOSC32K_RUNSTDBY | SYSCTRL_XOSC32K_ONDEMAND);
-  REG_GCLK_CLKCTRL  |= GCLK_CLKCTRL_ID(GCM_EIC) | // generic clock multiplexer id for the external interrupt controller
-                       GCLK_CLKCTRL_GEN_GCLK1 |   // generic clock 1 which is xosc32k
-                       GCLK_CLKCTRL_CLKEN;        // enable it
-  // Write protected, wait for sync
-  while (GCLK->STATUS.bit.SYNCBUSY);
-
-  // Set External Interrupt Controller to use channel 4
-  EIC->WAKEUP.reg |= EIC_WAKEUP_WAKEUPEN4;
-
-  PM->SLEEP.reg |= PM_SLEEP_IDLE_CPU;  // Enable Idle0 mode - sleep CPU clock only
-  //PM->SLEEP.reg |= PM_SLEEP_IDLE_AHB; // Idle1 - sleep CPU and AHB clocks
-  //PM->SLEEP.reg |= PM_SLEEP_IDLE_APB; // Idle2 - sleep CPU, AHB, and APB clocks
-
-  // It is either Idle mode or Standby mode, not both.
-  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;   // Enable Standby or "deep sleep" mode
 }
 
 void msgCheck() {
@@ -185,7 +164,7 @@ void batteryCheck() {
 }
 
 void sleepCheck() {
-  if ((hasFixOnBoot || gpsBooted) && timeExpired(&awakeTimer, AWAKE_INTERVAL, true)) {
+  if ((hasFixOnBoot || gpsBooted) && sleepmanager.SleepTime()) {
     // set pin mode to low
     digitalWrite(LED_BUILTIN, LOW);
     Serial.println("sleeping as timed out");
@@ -197,7 +176,7 @@ void sleepCheck() {
     #else
     USBDevice.standby();
     #endif
-    __WFI();  // wake from interrupt
+    sleepmanager.WFI();
     #ifdef WINDOWS_DEV
     USBDevice.attach();
     #endif
@@ -210,10 +189,6 @@ void sleepCheck() {
     // toggle output of built-in LED pin
     digitalWrite(LED_BUILTIN, HIGH);
   }
-}
-
-void EIC_ISR(void) {
-  awakeTimer = millis(); // refresh awake timer.
 }
 
 bool getSensorSerial() {
