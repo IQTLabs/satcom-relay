@@ -20,14 +20,14 @@ class GPS {
 
 private:
     Adafruit_GPS adafruitGPS;
-    float lastFixLatitude;
-    float lastFixLongitude;
+    float lastFixLatitude = 0;
+    float lastFixLongitude = 0;
     char lastFixDate[32] = {0};
     enum GPSState gpsCommandedState = NOT_SET;
     void getGPSTime();
 
 public:
-
+    GPS();
     int initGPS();
     boolean readGPSSerial();
     boolean gpsHasFix();
