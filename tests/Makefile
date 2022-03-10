@@ -1,10 +1,10 @@
-APP_NAME := test_timediff
-ARDUINO_LIBS := AUnit
+APP_NAME := test_satcom_relay
+ARDUINO_LIBS := AUnit ArduinoJson StdioSerial
 include ../EpoxyDuino/EpoxyDuino.mk
 
-test_timediff.o: test_timediff.ino ../satcom-relay/timediff.h
+test_satcom_relay.o: test_satcom_relay.ino ../satcom-relay/timediff.h ../satcom-relay/sensor-manager.h
 
-test_timediff.out: test_timediff.o
+test_satcom_relay.out: test_satcom_relay.o
 
-runtests: test_timediff.out
-	./test_timediff.out
+runtests: test_satcom_relay.out
+	./test_satcom_relay.out
