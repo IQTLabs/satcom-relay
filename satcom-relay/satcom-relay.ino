@@ -1,26 +1,25 @@
 #include <ArduinoJson.h>
+#include "satcom-relay.h"
 #include "timediff.h"
 #include "sleepmanager.h"
-#include "satcom-relay.h"
+#include "iridium-modem.h"
+#include "sensor-manager.h"
 
 SATCOMRelay relay;
 
 const char fwVersion[] = "2";
-const byte readBufferSize = 184;
 const int jsonBufferSize = 256;
 const byte wakeupRetries = 30;
+DynamicJsonDocument doc(jsonBufferSize);
 
 #define interruptPin 15
 #define AWAKE_INTERVAL (60 * 1000)
 SleepManager sleepmanager(digitalPinToInterrupt(interruptPin), AWAKE_INTERVAL);
 
 volatile uint32_t gpsTimer, gpsBootTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
-byte i = 0;
-char readBuffer[readBufferSize] = {0};
 bool iridium_wakeup_state = false;
 bool hasFixOnBoot = false;
 bool gpsBooted = false;
-DynamicJsonDocument doc(jsonBufferSize);
 
 Uart IridiumInterfaceSerial(&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
 Uart SensorSerial(&sercom2, SENSOR_RX_PIN, SENSOR_TX_PIN, SENSOR_RX_PAD, SENSOR_TX_PAD);
@@ -35,70 +34,14 @@ void SERCOM2_Handler()
   SensorSerial.IrqHandler();
 }
 
-class IridiumModem
-{
-  public:
-    void begin(Uart *uart);
-    void wakeup();
-    void check();
-    void sendJSON(const DynamicJsonDocument &doc);
-    Uart *modemUart;
-  private:
-    bool wakeup_state;
-};
-
-void IridiumModem::begin(Uart *modemUart) {
-  this->modemUart = modemUart;
-  this->wakeup_state = false;
-  this->modemUart->begin(57600);
-
-  pinMode(IRIDIUM_INTERFACE_WAKEUP_PIN, OUTPUT);
-  digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, this->wakeup_state);
-  // Assign IRIDIUM_INTERFACE pins SERCOM functionality
-  pinPeripheral(IRIDIUM_INTERFACE_RX_PIN, PIO_SERCOM);
-  pinPeripheral(IRIDIUM_INTERFACE_TX_PIN, PIO_SERCOM);
-}
-
-void IridiumModem::wakeup() {
-   this->wakeup_state = !wakeup_state;
-   digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, this->wakeup_state);
-   // Give the modem a chance to wakeup to receive the message.
-   // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
-   delay(1000);
-}
-
-// If the Iridium Interface MCU misses the initial message because it was sleeping it will send a \n to request a resend
-void IridiumModem::check() {
-  bool sawNewline = false;
-  while (IridiumInterfaceSerial.available()) {
-    if (IridiumInterfaceSerial.read() == '\n') {
-      sawNewline = true;
-    }
-  }
-  if (sawNewline) {
-    Serial.println("Received newline/resend request from Iridium Interface");
-    // TODO check this before sending
-    //serializeJson(doc, IridiumInterfaceSerial);
-  }
-}
-
-void IridiumModem::sendJSON(const DynamicJsonDocument &doc) {
-   serializeJson(doc, *(this->modemUart));
-   this->modemUart->println();
-}
-
 IridiumModem modem;
+SensorSerialManager ssm(&SensorSerial, &doc);
 
 void setup() {
-  Serial.begin(115200);
-
-  // message connection
-  memset(readBuffer, 0, sizeof(readBuffer));
-  SensorSerial.begin(57600);
-
   pinMode(LED_BUILTIN, OUTPUT);
-
-  modem.begin(&IridiumInterfaceSerial);
+  Serial.begin(115200);
+  SensorSerial.begin(57600);
+  modem.begin(&IridiumInterfaceSerial, IRIDIUM_INTERFACE_WAKEUP_PIN, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN);
 
   // Assign SENSOR pins SERCOM functionality
   pinPeripheral(SENSOR_RX_PIN, PIO_SERCOM);
@@ -133,9 +76,29 @@ void loop() {
 }
 
 void msgCheck() {
-  // Read from SensorSerial
-  if (getSensorSerial()) {
-    handleReadBuffer();
+  if (!ssm.poll()) {
+    return;
+  }
+  bool isHeartBeat = false;
+  if (ssm.parse(&isHeartBeat)) {
+    if (isHeartBeat) {
+      for (byte j = 0; j < wakeupRetries; ++j) {
+        if (gpsCheck(true)) {
+          break;
+        }
+        delay(1000);
+      }
+    }
+    doc["u_ms"] = millis();
+    doc["v"] = fwVersion;
+    doc["lat"] = relay.gps.getLastFixLatitude();
+    doc["lon"] = relay.gps.getLastFixLongitude();
+    doc["bat"] = relay.getBatteryVoltage();
+    modem.wakeup();
+    modem.sendJSON(doc);
+    serializeJson(doc, Serial);
+    Serial.println();
+    ssm.resetBuffer();
   }
 }
 
@@ -189,66 +152,6 @@ void sleepCheck() {
     // toggle output of built-in LED pin
     digitalWrite(LED_BUILTIN, HIGH);
   }
-}
-
-bool getSensorSerial() {
-  if (SensorSerial.available()) {
-    char c = SensorSerial.read();
-    Serial.print(c);
-    if (i == (sizeof(readBuffer) - 1)) {
-      c = 0;
-    }
-    if (c == '\n' || c == '\r') {
-      c = 0;
-    }
-    readBuffer[i] = c;
-    if (c == 0) {
-      i = 0;
-      Serial.println();
-      return true;
-    } else {
-      ++i;
-    }
-  }
-  return false;
-}
-
-void handleReadBuffer() {
-  doc.clear();
-  // https://arduinojson.org/v6/issues/garbage-out/
-  DeserializationError error = deserializeJson(doc, (const char*)readBuffer);
-  if (error) {
-    Serial.print("FAILED: trying to parse JSON: ");
-    Serial.println(error.c_str());
-    doc.clear();
-  } else {
-    bool isDevice = doc.containsKey("D");
-    if (!isDevice) {
-      Serial.print("Ignoring message without device key");
-      doc.clear();
-    } else {
-      bool isHeartbeat =  doc.containsKey("H");
-      if (isHeartbeat) {
-        byte j = 0;
-        for (; j < wakeupRetries; ++j) {
-          if (gpsCheck(true)) {
-            break;
-          }
-          delay(1000);
-        }
-      }
-      doc["u_ms"] = millis();
-      doc["v"] = fwVersion;
-      doc["lat"] = relay.gps.getLastFixLatitude();
-      doc["lon"] = relay.gps.getLastFixLongitude();
-      doc["bat"] = relay.getBatteryVoltage();
-      modem.wakeup();
-      modem.sendJSON(doc);
-      serializeJson(doc, Serial);
-      Serial.println();
-    }
-  }
-  memset(readBuffer, 0, sizeof(readBuffer));
 }
 
 // Blink to show the Relay MCU is awake

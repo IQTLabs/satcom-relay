@@ -31,6 +31,7 @@ jobs:
           PATH=~/bin:$PATH arduino-cli lib install "Adafruit GPS Library"
           PATH=~/bin:$PATH arduino-cli lib install IridiumSBDi2c
           PATH=~/bin:$PATH arduino-cli lib install ArduinoJson
+          ln -s ~/Arduino*/libraries/* EpoxyDuino/libraries
       - name: Compile Sketch
         run: PATH=~/bin:$PATH arduino-cli compile --fqbn ${{ matrix.fqbn }} satcom-relay/satcom-relay.ino
       - name: cppcheck
