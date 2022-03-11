@@ -1,15 +1,19 @@
 class IridiumModem
 {
   public:
+    IridiumModem();
     void begin(Uart *uart,  byte wakeup_pin, byte rx_pin, byte tx_pin);
     void wakeup();
     void check();
     void sendJSON(const DynamicJsonDocument &doc);
-    Uart *modemUart;
+    Uart *modemUart = NULL;
   private:
-    bool wakeup_state;
-    byte wakeup_pin;
+    bool wakeup_state = false;
+    byte wakeup_pin = 0;
 };
+
+IridiumModem::IridiumModem() {
+}
 
 void IridiumModem::begin(Uart *modemUart, byte wakeup_pin, byte rx_pin, byte tx_pin) {
   this->modemUart = modemUart;

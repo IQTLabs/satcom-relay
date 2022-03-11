@@ -35,7 +35,7 @@ jobs:
       - name: Compile Sketch
         run: PATH=~/bin:$PATH arduino-cli compile --fqbn ${{ matrix.fqbn }} satcom-relay/satcom-relay.ino
       - name: cppcheck
-        run: cppcheck --enable=style,performance,information,portability,warning --suppress=missingInclude --language=c++ --error-exitcode=1 --xml --inline-suppr satcom-relay/* || true
+        run: cppcheck --enable=style,performance,information,portability,warning --suppress=missingInclude --language=c++ --error-exitcode=1 --xml --inline-suppr satcom-relay/*
       - name: aunittests
         run: |
           cd tests

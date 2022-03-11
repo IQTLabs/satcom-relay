@@ -2,6 +2,9 @@
 
 #define GPSSerial Serial1
 
+GPS::GPS() {
+}
+
 int GPS::initGPS() {
   Adafruit_GPS temp_adafruitGPS(&GPSSerial);
   adafruitGPS = temp_adafruitGPS;
