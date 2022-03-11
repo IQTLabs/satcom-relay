@@ -2,7 +2,7 @@ class IridiumModem
 {
   public:
     IridiumModem();
-    void begin(Uart *uart,  byte wakeup_pin, byte rx_pin, byte tx_pin);
+    void begin(Uart *uart, byte wakeup_pin, byte rx_pin, byte tx_pin);
     void wakeup();
     void check();
     void sendJSON(const DynamicJsonDocument &doc);
@@ -47,7 +47,7 @@ void IridiumModem::check() {
   if (sawNewline) {
     Serial.println("Received newline/resend request from Iridium Interface");
     // TODO check this before sending
-    //serializeJson(doc, IridiumInterfaceSerial);
+    // sendJSON(doc);
   }
 }
 
