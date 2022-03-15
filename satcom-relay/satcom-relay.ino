@@ -47,7 +47,7 @@ void setup() {
   pinPeripheral(SENSOR_RX_PIN, PIO_SERCOM);
   pinPeripheral(SENSOR_TX_PIN, PIO_SERCOM);
 
-  relay.gps.initGPS();
+  relay.gps.initGPS(Serial1);
 }
 
 void loop() {
