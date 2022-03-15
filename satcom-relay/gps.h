@@ -28,7 +28,7 @@ private:
 
 public:
     GPS();
-    int initGPS();
+    int initGPS(Uart &GPSSerial);
     boolean readGPSSerial();
     boolean gpsHasFix();
     void gpsStandby();
