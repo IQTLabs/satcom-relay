@@ -167,7 +167,6 @@ void sleepCheck() {
   }
 }
 
-<<<<<<< HEAD
 void EIC_ISR(void) {
   awakeTimer = millis(); // refresh awake timer.
 }
@@ -241,8 +240,6 @@ void handleReadBuffer() {
   memset(readBuffer, 0, sizeof(readBuffer));
 }
 
-=======
->>>>>>> main
 // Blink to show the Relay MCU is awake
 void ledBlinkCheck() {
   if (timeExpired(&ledBlinkTimer, LED_BLINK_TIMER, true)) {
