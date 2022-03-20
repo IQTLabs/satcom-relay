@@ -1,5 +1,9 @@
 #include <ArduinoJson.h>
 #include "satcom-relay.h"
+#include "timediff.h"
+#include "sleepmanager.h"
+#include "iridium-modem.h"
+#include "sensor-manager.h"
 
 #define SDCARD_ENABLE_LED true
 
@@ -11,54 +15,35 @@ char messageBuffer[messageBufferSize];
 
 SATCOMRelay relay;
 
-#define interruptPin 15
 const char fwVersion[] = "2";
-const byte readBufferSize = 184;
 const int jsonBufferSize = 256;
 const byte wakeupRetries = 30;
+DynamicJsonDocument doc(jsonBufferSize);
 
-volatile uint32_t awakeTimer, gpsTimer, gpsBootTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
-byte i = 0;
-char readBuffer[readBufferSize] = {0};
+#define interruptPin 15
+#define AWAKE_INTERVAL (60 * 1000)
+SleepManager sleepmanager(digitalPinToInterrupt(interruptPin), AWAKE_INTERVAL);
+
+volatile uint32_t gpsTimer, gpsBootTimer, testModePrintTimer, batteryCheckTimer, ledBlinkTimer = 2000000000L; // Make all of these times far in the past by setting them near the middle of the millis() range so they are checked promptly
 bool iridium_wakeup_state = false;
 bool hasFixOnBoot = false;
 bool gpsBooted = false;
-DynamicJsonDocument doc(jsonBufferSize);
 
-Uart IridiumInterfaceSerial (&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
+Uart IridiumInterfaceSerial(&sercom1, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN, IRIDIUM_INTERFACE_RX_PAD, IRIDIUM_INTERFACE_TX_PAD);
+Uart SensorSerial(&sercom2, SENSOR_RX_PIN, SENSOR_TX_PIN, SENSOR_RX_PAD, SENSOR_TX_PAD);
 
 void SERCOM1_Handler()
 {
   IridiumInterfaceSerial.IrqHandler();
 }
 
-Uart SensorSerial(&sercom2, SENSOR_RX_PIN, SENSOR_TX_PIN, SENSOR_RX_PAD, SENSOR_TX_PAD);
-
 void SERCOM2_Handler()
 {
   SensorSerial.IrqHandler();
 }
 
-unsigned long timeDiff(unsigned long x, unsigned long nowTime) {
-  if (nowTime >= x) {
-    return nowTime - x;
-  }
-  return (ULONG_MAX - x) + nowTime;
-}
-
-unsigned long nowTimeDiff(unsigned long x) {
-  return timeDiff(x, millis());
-}
-
-bool timeExpired(volatile unsigned long *x, unsigned long interval, bool reset) {
-  if (nowTimeDiff(*x) > interval) {
-    if (reset) {
-      *x = millis();
-    }
-    return true;
-  }
-  return false;
-}
+IridiumModem modem;
+SensorSerialManager ssm(&SensorSerial, &doc);
 
 void setup() {
   sentMessageLog = new MessageLog("sent.txt", SDCardCSPin, SDCardDetectPin, SDCardActivityLEDPin);
@@ -66,28 +51,16 @@ void setup() {
   pinMode(IRIDIUM_INTERFACE_WAKEUP_PIN, OUTPUT);
   digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
 
-  Serial.begin(115200);
-
-  // message connection
-  memset(readBuffer, 0, sizeof(readBuffer));
-  SensorSerial.begin(57600);
-
-  IridiumInterfaceSerial.begin(57600);
-
   pinMode(LED_BUILTIN, OUTPUT);
-
-  // Assign IRIDIUM_INTERFACE pins SERCOM functionality
-  pinPeripheral(IRIDIUM_INTERFACE_RX_PIN, PIO_SERCOM);
-  pinPeripheral(IRIDIUM_INTERFACE_TX_PIN, PIO_SERCOM);
+  Serial.begin(115200);
+  SensorSerial.begin(57600);
+  modem.begin(&IridiumInterfaceSerial, IRIDIUM_INTERFACE_WAKEUP_PIN, IRIDIUM_INTERFACE_RX_PIN, IRIDIUM_INTERFACE_TX_PIN);
 
   // Assign SENSOR pins SERCOM functionality
   pinPeripheral(SENSOR_RX_PIN, PIO_SERCOM);
   pinPeripheral(SENSOR_TX_PIN, PIO_SERCOM);
 
-  relay.gps.initGPS();
-
-  // Setup interrupt sleep pin
-  setupInterruptSleep();
+  relay.gps.initGPS(Serial1);
 }
 
 void loop() {
@@ -105,7 +78,7 @@ void loop() {
   batteryCheck();
   sleepCheck();
   ledBlinkCheck();
-  iridiumInterfaceCheck();
+  modem.check();
 
   #if TEST_MODE // print the state of the relay
   if (timeExpired(&testModePrintTimer, TEST_MODE_PRINT_INTERVAL, true)) {
@@ -115,32 +88,30 @@ void loop() {
   #endif
 }
 
-void setupInterruptSleep() {
-  // whenever we get an interrupt, reset the awake clock.
-  attachInterrupt(digitalPinToInterrupt(interruptPin), EIC_ISR, CHANGE);
-  // Set external 32k oscillator to run when idle or sleep mode is chosen
-  SYSCTRL->XOSC32K.reg |=  (SYSCTRL_XOSC32K_RUNSTDBY | SYSCTRL_XOSC32K_ONDEMAND);
-  REG_GCLK_CLKCTRL  |= GCLK_CLKCTRL_ID(GCM_EIC) | // generic clock multiplexer id for the external interrupt controller
-                       GCLK_CLKCTRL_GEN_GCLK1 |   // generic clock 1 which is xosc32k
-                       GCLK_CLKCTRL_CLKEN;        // enable it
-  // Write protected, wait for sync
-  while (GCLK->STATUS.bit.SYNCBUSY);
-
-  // Set External Interrupt Controller to use channel 4
-  EIC->WAKEUP.reg |= EIC_WAKEUP_WAKEUPEN4;
-
-  PM->SLEEP.reg |= PM_SLEEP_IDLE_CPU;  // Enable Idle0 mode - sleep CPU clock only
-  //PM->SLEEP.reg |= PM_SLEEP_IDLE_AHB; // Idle1 - sleep CPU and AHB clocks
-  //PM->SLEEP.reg |= PM_SLEEP_IDLE_APB; // Idle2 - sleep CPU, AHB, and APB clocks
-
-  // It is either Idle mode or Standby mode, not both.
-  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;   // Enable Standby or "deep sleep" mode
-}
-
 void msgCheck() {
-  // Read from SensorSerial
-  if (getSensorSerial()) {
-    handleReadBuffer();
+  if (!ssm.poll()) {
+    return;
+  }
+  bool isHeartBeat = false;
+  if (ssm.parse(&isHeartBeat)) {
+    if (isHeartBeat) {
+      for (byte j = 0; j < wakeupRetries; ++j) {
+        if (gpsCheck(true)) {
+          break;
+        }
+        delay(1000);
+      }
+    }
+    doc["u_ms"] = millis();
+    doc["v"] = fwVersion;
+    doc["lat"] = relay.gps.getLastFixLatitude();
+    doc["lon"] = relay.gps.getLastFixLongitude();
+    doc["bat"] = relay.getBatteryVoltage();
+    modem.wakeup();
+    modem.sendJSON(doc);
+    serializeJson(doc, Serial);
+    Serial.println();
+    ssm.resetBuffer();
   }
 }
 
@@ -169,7 +140,7 @@ void batteryCheck() {
 }
 
 void sleepCheck() {
-  if ((hasFixOnBoot || gpsBooted) && timeExpired(&awakeTimer, AWAKE_INTERVAL, true)) {
+  if ((hasFixOnBoot || gpsBooted) && sleepmanager.SleepTime()) {
     // set pin mode to low
     digitalWrite(LED_BUILTIN, LOW);
     Serial.println("sleeping as timed out");
@@ -181,7 +152,7 @@ void sleepCheck() {
     #else
     USBDevice.standby();
     #endif
-    __WFI();  // wake from interrupt
+    sleepmanager.WFI();
     #ifdef WINDOWS_DEV
     USBDevice.attach();
     #endif
@@ -196,6 +167,7 @@ void sleepCheck() {
   }
 }
 
+<<<<<<< HEAD
 void EIC_ISR(void) {
   awakeTimer = millis(); // refresh awake timer.
 }
@@ -269,24 +241,11 @@ void handleReadBuffer() {
   memset(readBuffer, 0, sizeof(readBuffer));
 }
 
+=======
+>>>>>>> main
 // Blink to show the Relay MCU is awake
 void ledBlinkCheck() {
   if (timeExpired(&ledBlinkTimer, LED_BLINK_TIMER, true)) {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-  }
-}
-
-// If the Iridium Interface MCU misses the initial message because it was sleeping it will send a \n to request a resend
-void iridiumInterfaceCheck() {
-  bool sawNewline = false;
-  while (IridiumInterfaceSerial.available()) {
-    if (IridiumInterfaceSerial.read() == '\n') {
-      sawNewline = true;
-    }
-  }
-  if (sawNewline) {
-    Serial.println("Received newline/resend request from Iridium Interface");
-    // TODO check this before sending
-    //serializeJson(doc, IridiumInterfaceSerial);
   }
 }

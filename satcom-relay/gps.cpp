@@ -1,8 +1,9 @@
 #include "gps.h"
 
-#define GPSSerial Serial1
+GPS::GPS() {
+}
 
-int GPS::initGPS() {
+int GPS::initGPS(Uart &GPSSerial) {
   Adafruit_GPS temp_adafruitGPS(&GPSSerial);
   adafruitGPS = temp_adafruitGPS;
 
