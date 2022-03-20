@@ -5,6 +5,14 @@
 #include "iridium-modem.h"
 #include "sensor-manager.h"
 
+#define SDCARD_ENABLE_LED true
+
+// Ensure MISO/MOSI/SCK pins are not connected to the port replicator board
+#include "messagelog.h"
+MessageLog *sentMessageLog;
+const size_t messageBufferSize = 1024;
+char messageBuffer[messageBufferSize];
+
 SATCOMRelay relay;
 
 const char fwVersion[] = "2";
@@ -38,6 +46,11 @@ IridiumModem modem;
 SensorSerialManager ssm(&SensorSerial, &doc);
 
 void setup() {
+  sentMessageLog = new MessageLog("sent.txt", SDCardCSPin, SDCardDetectPin, SDCardActivityLEDPin);
+
+  pinMode(IRIDIUM_INTERFACE_WAKEUP_PIN, OUTPUT);
+  digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
+
   pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   SensorSerial.begin(57600);
@@ -152,6 +165,79 @@ void sleepCheck() {
     // toggle output of built-in LED pin
     digitalWrite(LED_BUILTIN, HIGH);
   }
+}
+
+void EIC_ISR(void) {
+  awakeTimer = millis(); // refresh awake timer.
+}
+
+bool getSensorSerial() {
+  if (SensorSerial.available()) {
+    char c = SensorSerial.read();
+    Serial.print(c);
+    if (i == (sizeof(readBuffer) - 1)) {
+      c = 0;
+    }
+    if (c == '\n' || c == '\r') {
+      c = 0;
+    }
+    readBuffer[i] = c;
+    if (c == 0) {
+      i = 0;
+      Serial.println();
+      return true;
+    } else {
+      ++i;
+    }
+  }
+  return false;
+}
+
+void handleReadBuffer() {
+  doc.clear();
+  // https://arduinojson.org/v6/issues/garbage-out/
+  DeserializationError error = deserializeJson(doc, (const char*)readBuffer);
+  if (error) {
+    Serial.print("FAILED: trying to parse JSON: ");
+    Serial.println(error.c_str());
+    doc.clear();
+  } else {
+    bool isDevice = doc.containsKey("D");
+    if (!isDevice) {
+      Serial.print("Ignoring message without device key");
+      doc.clear();
+    } else {
+      bool isHeartbeat =  doc.containsKey("H");
+      if (isHeartbeat) {
+        byte j = 0;
+        for (; j < wakeupRetries; ++j) {
+          if (gpsCheck(true)) {
+            break;
+          }
+          delay(1000);
+        }
+      }
+      doc["u_ms"] = millis();
+      doc["v"] = fwVersion;
+      doc["lat"] = relay.gps.getLastFixLatitude();
+      doc["lon"] = relay.gps.getLastFixLongitude();
+      doc["bat"] = relay.getBatteryVoltage();
+      iridium_wakeup_state = !iridium_wakeup_state;
+      digitalWrite(IRIDIUM_INTERFACE_WAKEUP_PIN, iridium_wakeup_state);
+      size_t docSize = measureJson(doc);
+      serializeJson(doc, &messageBuffer, docSize);
+      if (sentMessageLog->append(messageBuffer) < docSize) {
+        Serial.println(F("Error from sentMessageLog->append()"));
+      }
+      // Give the modem a chance to wakeup to receive the message.
+      // TODO: the modem could also verify JSON to make sure it got a complete message and ask for a retry if necessary.
+      delay(1000);
+      IridiumInterfaceSerial.println(messageBuffer);
+      Serial.println(messageBuffer);
+      memset(messageBuffer, 0, messageBufferSize);
+    }
+  }
+  memset(readBuffer, 0, sizeof(readBuffer));
 }
 
 // Blink to show the Relay MCU is awake
